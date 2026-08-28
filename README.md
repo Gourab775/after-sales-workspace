@@ -89,7 +89,7 @@ Open http://localhost:3000 for the workspace UI.
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `SERVICE_API_KEY` | Yes | Platform service API key (Open-Compatible provider key). |
-| `SERVICE_BASE_URL` | Yes | Gateway base URL, e.g. `https://ai-gateway.edgeone.link/v1` for Makers Models. |
+| `SERVICE_BASE_URL` | Yes | Gateway base URL, e.g. `https://gateway.edgeone.link/v1` for Makers Models. |
 | `SERVICE_MODEL` | No | Model identifier. Defaults to `@makers/deepseek-v4-flash`. |
 
 > Alias: `SERVICE_*` is the canonical naming in this workspace. `SERVICE_API_KEY`, `SERVICE_BASE_URL`, and `SERVICE_MODEL` are aliases for `AI_GATEWAY_API_KEY`, `AI_GATEWAY_BASE_URL`, and `AI_GATEWAY_MODEL` for backward compatibility. Either naming works; prefer `SERVICE_*` for new deployments.
