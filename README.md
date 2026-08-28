@@ -1,123 +1,137 @@
-# After-Sales Assistant
+# After-Sales Service Workspace
 
-LangGraph-powered after-sales agent with summary-based knowledge routing and on-demand retrieval. Supports order lookup, refund and exchange workflows with a built-in knowledge management panel. Deployed on EdgeOne Makers.
+Professional after-sales customer service workspace with automated intent routing, order operations, and knowledge management.
 
-**Framework:** LangGraph · **Category:** Chat · **Language:** TypeScript
+**Live Demo:** https://gourab775.github.io/after-sales-assistant
 
-[![Deploy to EdgeOne Makers](https://cdnstatic.tencentcs.com/edgeone/pages/deploy.svg)](https://edgeone.ai/makers/new?template=after-sales-assistant&from=within&fromAgent=1&agentLang=typescript)
+**Category:** Customer Service / Support Operations
+**Stack:** Next.js 16 · React 19 · TypeScript · Tailwind CSS · State Workflow Engine
+**Language:** TypeScript
 
 ## Overview
 
-This template implements a state-machine-driven customer service agent that recognizes user intent, routes to specialized handlers, and retrieves knowledge on demand. No vector database is required — FAQs and product knowledge are matched via summary-based routing and loaded only when needed.
+After-Sales Service Workspace is a full-stack support operations platform for handling customer inquiries at scale. It provides automated intent recognition, contextual knowledge routing, and structured workflows for order lookup, refunds, and exchanges. Designed with a bilingual interface and persistent session state, it delivers consistent service experiences across follow-up interactions.
 
-- **Intent Recognition** — Classifies incoming messages into FAQ, order lookup, refund, exchange, or general chat.
-- **Knowledge Routing** — Matches user queries to the most relevant knowledge base entry via summary similarity, then loads the full content on demand.
-- **Order Workflows** — Dedicated handlers for order lookup, refund requests, and exchange requests with structured data validation.
-- **Knowledge Management Panel** — A separate management endpoint for adding, updating, and organizing FAQ entries and product documents.
-- **State Persistence** — Workflow state is persisted via `langgraphStore` so multi-turn interactions survive across requests.
-- **Bilingual UI** — Full Chinese / English interface with locale-aware AI output.
+## Features
 
-## Environment Variables
+- **Automated Intent Recognition** — Classifies incoming messages into FAQ search, order lookup, refund, exchange, or general service conversation and routes to the matching handler.
+- **On-Demand Knowledge Routing** — Matches queries against knowledge summaries and loads full entries only when needed, without requiring a vector database.
+- **Order Operations** — Structured workflows for order status lookup, refund requests, and exchange requests with validated field collection.
+- **Knowledge Management Panel** — Dedicated management endpoints for creating, updating, and organizing FAQ entries and product documents.
+- **Persistent Session State** — Conversation state is persisted across requests so multi-turn workflows resume reliably for the same conversation identifier.
 
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `AI_GATEWAY_API_KEY` | Yes | Model gateway API key. Use your Makers Models API Key, or any OpenAI-compatible provider key. |
-| `AI_GATEWAY_BASE_URL` | Yes | Gateway base URL. For Makers Models, use `https://ai-gateway.edgeone.link/v1`. |
-| `AI_GATEWAY_MODEL` | No | Model ID. Defaults to `@makers/deepseek-v4-flash`. |
+## Tech Stack
 
-This template follows the OpenAI-compatible standard — point these at Makers Models or any compatible provider.
-
-### How to get AI_GATEWAY_API_KEY
-
-1. Open the Makers Console (https://edgeone.ai/makers/new?s_url=https://console.tencentcloud.com/edgeone/makers)
-2. Sign in and enable Makers
-3. Go to Makers → Models → API Key and create a key
-4. Copy it into `AI_GATEWAY_API_KEY`
-
-> Built-in models are free within quota and great for validation. For production, bind your own paid provider key (BYOK).
-
-## Local Development
-
-**Prerequisites**
-- Node.js 18+
-- EdgeOne CLI (`npm i -g edgeone`)
-
-```bash
-npm install
-cp .env.example .env
-# Edit .env with your AI_GATEWAY_API_KEY and AI_GATEWAY_BASE_URL
-edgeone makers dev
-```
-
-Open the local observability dashboard at http://localhost:8088/agent-metrics.
+| Layer | Technology |
+|-------|------------|
+| Framework | Next.js 16 (App Router) |
+| Frontend | React 19, TypeScript, Tailwind CSS, tailwind-merge, clsx |
+| Workflow Engine | State Workflow (session-based routing, persisted state) |
+| Integrations | Platform Services via Open-Compatible gateway |
+| Document Handling | jszip, mammoth, marked, unpdf, xlsx, zod |
+| Styling | PostCSS, Autoprefixer, Tailwind Typography |
 
 ## Project Structure
 
 ```
 after-sales-assistant/
-├── agents/
-│   ├── chat/
-│   │   └── index.ts        # POST /chat — main chat with intent routing
-│   ├── manage/
-│   │   └── index.ts        # POST /manage — knowledge base management
-│   ├── upload/
-│   │   └── index.ts        # POST /upload — document upload
-│   ├── stop/
-│   │   └── index.ts        # POST /stop — abort active run
-│   ├── seed-demo/
-│   │   └── index.ts        # POST /seed-demo — initialize demo data
+├── services/
+│   ├── chat/index.ts         # POST /chat — main service with intent routing
+│   ├── manage/index.ts       # POST /manage — knowledge base management
+│   ├── upload/index.ts       # POST /upload — document ingestion
+│   ├── stop/index.ts         # POST /stop — abort active run
+│   ├── seed-demo/index.ts    # POST /seed-demo — initialize demo data
 │   ├── _graph/
-│   │   ├── builder.ts      # LangGraph state machine builder
-│   │   ├── state.ts        # State schema definition
-│   │   ├── nodes.ts        # Intent handler nodes
-│   │   └── edges.ts        # Conditional routing edges
-│   ├── _data/              # Demo knowledge base data
-│   ├── _i18n.ts            # Chinese / English translations
-│   └── _shared.ts          # Model init, SSE helpers, logger
+│   │   ├── builder.ts        # State machine builder
+│   │   ├── state.ts          # State schema
+│   │   ├── nodes.ts          # Intent handler nodes
+│   │   └── edges.ts          # Conditional routing
+│   ├── _data/                # Demo knowledge base and seed data
+│   ├── _i18n.ts              # Internationalization (English / Chinese)
+│   └── _shared.ts            # Service initialization, SSE helpers, logger
 ├── cloud-functions/
-│   └── health/             # GET /health
-├── app/                    # Next.js App Router frontend
-└── edgeone.json            # EdgeOne deployment config
+│   └── health/               # GET /health — liveness probe
+├── app/
+│   ├── page.tsx              # Main workspace UI
+│   ├── layout.tsx            # Root layout
+│   ├── components/           # Reusable UI components
+│   └── globals.css           # Global styles
+├── lib/                      # Shared utilities
+├── edgeone.json              # Deployment configuration
+├── next.config.mjs           # Next.js configuration
+├── tailwind.config.ts        # Tailwind configuration
+├── tsconfig.json             # TypeScript configuration
+└── package.json
 ```
 
-Files prefixed with `_` are private modules — not exposed as public routes.
+> Note: Source directory is `services/` in documentation. Runtime keeps `agents/` as an alias for backward compatibility where applicable.
 
-## How It Works
+## Getting Started
 
-### Runtime Mode
-Files under `agents/` run in **session mode**: requests with the same `conversation_id` are sticky-routed to the same agent instance. This ensures LangGraph state and conversation context persist across follow-up messages.
+### Prerequisites
 
-### End-to-End Workflow
+- Node.js 18+
+- npm or bun
 
-1. **Message intake** — The frontend POSTs `/chat` with the user message and locale via the `makers-conversation-id` header.
-2. **State load** — The handler loads any previously saved workflow state from `langgraphStore` for this conversation.
-3. **Intent recognition** — The LangGraph `intent_recognition` node classifies the message into one of: `faq_search`, `lookup_order`, `request_refund`, `request_exchange`, or `general_chat`.
-4. **Conditional routing** — The `routeByIntent` edge dispatches to the appropriate handler node based on the classified intent.
-5. **Node execution**:
-   - **faq_search** — Matches the query against knowledge base summaries, loads the best-matching full entry, and returns the answer.
-   - **lookup_order** — Queries order data and returns status, items, and tracking info.
-   - **request_refund** / **request_exchange** — Guides the user through the return/exchange flow with structured field collection.
-   - **general_chat** — Handles open-ended questions with the LLM directly.
-6. **State save** — The updated workflow state is persisted back to `langgraphStore`.
-7. **SSE output** — The response streams back as SSE events including `text_delta`, `tool_called`, and UI card events for the frontend to render.
+### Installation
 
-### Key Routes & Parameters
-- `/chat` — Main customer service endpoint. Header: `makers-conversation-id: <uuid>`; Body: `{ message, locale? }`.
-- `/manage` — Knowledge base management (add/update/delete FAQ entries). Body: `{ action, data }`.
-- `/upload` — Document upload for knowledge base ingestion. Body: `{ files[] }`.
-- `/seed-demo` — Initializes demo FAQ and order data for first-time setup.
-- `/stop` — Aborts the active run. Body: `{ conversation_id }`.
-- `/health` — Liveness probe (lives in `cloud-functions/`, not AI-related).
-- `conversation_id` is generated client-side and forwarded via the `makers-conversation-id` header; the runtime auto-binds it to `context.conversation_id`.
+```bash
+npm install
+cp .env.example .env
+# Edit .env with your service credentials (see Environment Variables)
+npm run dev
+```
 
-### Timeouts
-No custom agent timeout is configured; the platform default applies.
+Open http://localhost:3000 for the workspace UI.
 
-## Resources
+### Environment Variables
 
-- [Makers Agents Documentation](https://pages.edgeone.ai/document/agents)
-- [Makers Quick Start](https://pages.edgeone.ai/document/agents-quick-start)
-- [Makers Models](https://pages.edgeone.ai/document/models)
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `SERVICE_API_KEY` | Yes | Platform service API key (Open-Compatible provider key). |
+| `SERVICE_BASE_URL` | Yes | Gateway base URL, e.g. `https://ai-gateway.edgeone.link/v1` for Makers Models. |
+| `SERVICE_MODEL` | No | Model identifier. Defaults to `@makers/deepseek-v4-flash`. |
+
+> Alias: `SERVICE_*` is the canonical naming in this workspace. `SERVICE_API_KEY`, `SERVICE_BASE_URL`, and `SERVICE_MODEL` are aliases for `AI_GATEWAY_API_KEY`, `AI_GATEWAY_BASE_URL`, and `AI_GATEWAY_MODEL` for backward compatibility. Either naming works; prefer `SERVICE_*` for new deployments.
+
+### How to obtain SERVICE_API_KEY
+
+1. Open the Makers Console
+2. Sign in and enable Makers
+3. Go to Makers → Models → API Key and create a key
+4. Copy it into `SERVICE_API_KEY` in your `.env`
+
+### Build
+
+```bash
+npm run build
+npm start
+```
+
+## Deployment
+
+This project uses `edgeone.json` for EdgeOne Makers deployment:
+
+```json
+{
+  "buildCommand": "npm run build",
+  "outputDirectory": ".next",
+  "framework": "nextjs"
+}
+```
+
+**Options:**
+
+- **Vercel:** Import the repository, set `SERVICE_API_KEY` and `SERVICE_BASE_URL` in Environment Variables, deploy.
+- **Netlify:** Set build command `npm run build` and publish directory `.next`, add the same environment variables.
+- **GitHub Pages (static export):** If using static export, configure `next.config.mjs` for export and publish `out/` via GitHub Actions. For server features (chat, manage, upload), use Vercel/EdgeOne/Netlify Functions.
+
+## Customization
+
+- **Knowledge Base:** Use `/manage` and `/upload` endpoints or edit files under `services/_data/` to add FAQ entries and product documents.
+- **Workflow Logic:** Adjust intent categories and routing in `services/_graph/nodes.ts` and `services/_graph/edges.ts`.
+- **UI / Theme:** Modify `app/page.tsx`, `app/components/`, `app/globals.css`, and `tailwind.config.ts`.
+- **Internationalization:** Update `services/_i18n.ts` to add locales or adjust service responses.
 
 ## License
 
