@@ -7,8 +7,16 @@
       "includeFiles": []
     }
   },
+  "services": {
+    "framework": "workflow",
+    "externalNodeModules": [
+      "@langchain/openai",
+      "@langchain/core",
+      "@langchain/langgraph"
+    ]
+  },
   "agents": {
-    "framework": "langgraph",
+    "framework": "workflow",
     "externalNodeModules": [
       "@langchain/openai",
       "@langchain/core",
