@@ -1,5 +1,6 @@
 {
   "name": "after-sales-assistant",
+  "description": "Professional after-sales service workspace with automated intent routing and order operations",
   "private": true,
   "version": "0.1.0",
   "type": "module",
