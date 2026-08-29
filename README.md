@@ -2,10 +2,10 @@
 
 Professional after-sales customer service workspace with automated intent routing, order operations, and knowledge management.
 
-**Live Demo:** https://after-sales-assistant.vercel.app
+**Live Demo:** https://after-sales-workspace.vercel.app
 
 **Category:** Customer Service / Support Operations
-**Stack:** Next.js 16 Â· React 19 Â· TypeScript Â· Tailwind CSS Â· State Workflow Engine
+**Stack:** Next.js 16 · React 19 · TypeScript · Tailwind CSS · State Workflow Engine
 **Language:** TypeScript
 
 ## Overview
@@ -14,11 +14,11 @@ After-Sales Service Workspace is a full-stack support operations platform for ha
 
 ## Features
 
-- **Automated Intent Recognition** â€” Classifies incoming messages into FAQ search, order lookup, refund, exchange, or general service conversation and routes to the matching handler.
-- **On-Demand Knowledge Routing** â€” Matches queries against knowledge summaries and loads full entries only when needed, without requiring a vector database.
-- **Order Operations** â€” Structured workflows for order status lookup, refund requests, and exchange requests with validated field collection.
-- **Knowledge Management Panel** â€” Dedicated management endpoints for creating, updating, and organizing FAQ entries and product documents.
-- **Persistent Session State** â€” Conversation state is persisted across requests so multi-turn workflows resume reliably for the same conversation identifier.
+- **Automated Intent Recognition** — Classifies incoming messages into FAQ search, order lookup, refund, exchange, or general service conversation and routes to the matching handler.
+- **On-Demand Knowledge Routing** — Matches queries against knowledge summaries and loads full entries only when needed, without requiring a vector database.
+- **Order Operations** — Structured workflows for order status lookup, refund requests, and exchange requests with validated field collection.
+- **Knowledge Management Panel** — Dedicated management endpoints for creating, updating, and organizing FAQ entries and product documents.
+- **Persistent Session State** — Conversation state is persisted across requests so multi-turn workflows resume reliably for the same conversation identifier.
 
 ## Tech Stack
 
@@ -35,33 +35,33 @@ After-Sales Service Workspace is a full-stack support operations platform for ha
 
 ```
 after-sales-assistant/
-â”œâ”€â”€ services/
-â”‚   â”œâ”€â”€ chat/index.ts         # POST /chat â€” main service with intent routing
-â”‚   â”œâ”€â”€ manage/index.ts       # POST /manage â€” knowledge base management
-â”‚   â”œâ”€â”€ upload/index.ts       # POST /upload â€” document ingestion
-â”‚   â”œâ”€â”€ stop/index.ts         # POST /stop â€” abort active run
-â”‚   â”œâ”€â”€ seed-demo/index.ts    # POST /seed-demo â€” initialize demo data
-â”‚   â”œâ”€â”€ _graph/
-â”‚   â”‚   â”œâ”€â”€ builder.ts        # State machine builder
-â”‚   â”‚   â”œâ”€â”€ state.ts          # State schema
-â”‚   â”‚   â”œâ”€â”€ nodes.ts          # Intent handler nodes
-â”‚   â”‚   â””â”€â”€ edges.ts          # Conditional routing
-â”‚   â”œâ”€â”€ _data/                # Demo knowledge base and seed data
-â”‚   â”œâ”€â”€ _i18n.ts              # Internationalization (English / Chinese)
-â”‚   â””â”€â”€ _shared.ts            # Service initialization, SSE helpers, logger
-â”œâ”€â”€ cloud-functions/
-â”‚   â””â”€â”€ health/               # GET /health â€” liveness probe
-â”œâ”€â”€ app/
-â”‚   â”œâ”€â”€ page.tsx              # Main workspace UI
-â”‚   â”œâ”€â”€ layout.tsx            # Root layout
-â”‚   â”œâ”€â”€ components/           # Reusable UI components
-â”‚   â””â”€â”€ globals.css           # Global styles
-â”œâ”€â”€ lib/                      # Shared utilities
-â”œâ”€â”€ edgeone.json              # Deployment configuration
-â”œâ”€â”€ next.config.mjs           # Next.js configuration
-â”œâ”€â”€ tailwind.config.ts        # Tailwind configuration
-â”œâ”€â”€ tsconfig.json             # TypeScript configuration
-â””â”€â”€ package.json
+├── services/
+│   ├── chat/index.ts         # POST /chat — main service with intent routing
+│   ├── manage/index.ts       # POST /manage — knowledge base management
+│   ├── upload/index.ts       # POST /upload — document ingestion
+│   ├── stop/index.ts         # POST /stop — abort active run
+│   ├── seed-demo/index.ts    # POST /seed-demo — initialize demo data
+│   ├── _graph/
+│   │   ├── builder.ts        # State machine builder
+│   │   ├── state.ts          # State schema
+│   │   ├── nodes.ts          # Intent handler nodes
+│   │   └── edges.ts          # Conditional routing
+│   ├── _data/                # Demo knowledge base and seed data
+│   ├── _i18n.ts              # Internationalization (English / Chinese)
+│   └── _shared.ts            # Service initialization, SSE helpers, logger
+├── cloud-functions/
+│   └── health/               # GET /health — liveness probe
+├── app/
+│   ├── page.tsx              # Main workspace UI
+│   ├── layout.tsx            # Root layout
+│   ├── components/           # Reusable UI components
+│   └── globals.css           # Global styles
+├── lib/                      # Shared utilities
+├── edgeone.json              # Deployment configuration
+├── next.config.mjs           # Next.js configuration
+├── tailwind.config.ts        # Tailwind configuration
+├── tsconfig.json             # TypeScript configuration
+└── package.json
 ```
 
 > Note: Source directory is `services/` in documentation. Runtime keeps `agents/` as an alias for backward compatibility where applicable.
@@ -98,7 +98,7 @@ Open http://localhost:3000 for the workspace UI.
 
 1. Open the Makers Console
 2. Sign in and enable Makers
-3. Go to Makers â†’ Models â†’ API Key and create a key
+3. Go to Makers → Models → API Key and create a key
 4. Copy it into `SERVICE_API_KEY` in your `.env`
 
 ### Build
