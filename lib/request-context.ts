@@ -25,6 +25,9 @@ export async function buildContext(req: Request, body: any): Promise<RouteContex
     AI_GATEWAY_API_KEY: raw.AI_GATEWAY_API_KEY || raw.SERVICE_API_KEY,
     AI_GATEWAY_BASE_URL: raw.AI_GATEWAY_BASE_URL || raw.SERVICE_BASE_URL,
     AI_GATEWAY_MODEL: raw.AI_GATEWAY_MODEL || raw.SERVICE_MODEL,
+    AI_GATEWAY_BACKUP_API_KEY: raw.AI_GATEWAY_BACKUP_API_KEY || raw.SERVICE_BACKUP_API_KEY,
+    AI_GATEWAY_BACKUP_BASE_URL: raw.AI_GATEWAY_BACKUP_BASE_URL || raw.SERVICE_BACKUP_BASE_URL,
+    AI_GATEWAY_BACKUP_MODEL: raw.AI_GATEWAY_BACKUP_MODEL || raw.SERVICE_BACKUP_MODEL,
   };
   const store = createStore(env);
   const headerId = req.headers.get("makers-conversation-id") || "";

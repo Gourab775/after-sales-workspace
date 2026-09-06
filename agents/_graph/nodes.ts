@@ -7,7 +7,8 @@
  * concurrency.
  */
 import { HumanMessage, SystemMessage } from "@langchain/core/messages";
-import { createModel, createLogger } from "../_shared";
+import type { ChatOpenAI } from "@langchain/openai";
+import { createLogger, invokeWithFallback, streamWithFallback } from "../_shared";
 import type { AfterSalesStateType } from "./state";
 
 /** AI Gateway env, threaded from context.env through the graph builder. */
@@ -23,32 +24,19 @@ type StreamRuntime = {
   writer?: (event: Record<string, unknown>) => void;
 };
 
-function chunkText(content: unknown): string {
-  if (typeof content === "string") return content;
-  if (!Array.isArray(content)) return "";
-  return content.map(part => {
-    if (typeof part === "string") return part;
-    if (part && typeof part === "object" && "text" in part) return String((part as { text?: unknown }).text ?? "");
-    return "";
-  }).join("");
+function emitDelta(runtime: StreamRuntime | undefined, node: string) {
+  return (delta: string) => {
+    runtime?.writer?.({ type: "ai_response_delta", node, delta });
+  };
 }
 
 async function streamAnswer(
-  model: ReturnType<typeof createModel>,
-  messages: Parameters<ReturnType<typeof createModel>["invoke"]>[0],
+  env: AgentEnv,
+  messages: Parameters<ChatOpenAI["invoke"]>[0],
   runtime: StreamRuntime | undefined,
   node: string,
 ): Promise<string> {
-  let answer = "";
-  const stream = await (model as any).stream(messages, runtime?.signal ? { signal: runtime.signal } : undefined);
-  for await (const chunk of stream) {
-    if (runtime?.signal?.aborted) break;
-    const delta = chunkText(chunk?.content);
-    if (!delta) continue;
-    answer += delta;
-    runtime?.writer?.({ type: "ai_response_delta", node, delta });
-  }
-  return answer;
+  return streamWithFallback(env, messages, emitDelta(runtime, node), { signal: runtime?.signal });
 }
 
 // ─── Store Order Helpers ───
@@ -146,9 +134,8 @@ export async function intentRecognition(state: AfterSalesStateType, env: AgentEn
     logger.log(`Context carry-forward: intent=${state.intent}, orderId=${orderId}`);
     return { intent: state.intent, orderId, waitingForUser: false };
   }
-  const model = createModel(env);
   // Intent prompt returns a fixed JSON schema; classification works on English input.
-  const response = await model.invoke([
+  const response = await invokeWithFallback(env, [
     new SystemMessage(`You are an after-sales support intent classifier. Given the user message, determine the intent and output JSON:
 {"intent": "faq"|"lookup_order"|"refund"|"exchange"|"general", "orderId": "extract the order ID if mentioned, otherwise null", "reason": "brief explanation"}
 
@@ -193,11 +180,10 @@ export async function faqSearch(state: AfterSalesStateType, env: AgentEnv, conte
     };
   }
 
-  const model = createModel(env);
   const summaryList = summaries.map((s, i) => `[${i}] 【${s.category}】${s.filename}: ${s.summary} (keywords: ${s.keywords.join(", ")})`).join("\n");
 
   // Routing prompt — output is a fixed JSON schema.
-  const routeResponse = await model.invoke([
+  const routeResponse = await invokeWithFallback(env, [
     new SystemMessage(`You are a document routing assistant. Given the user question, pick the 1-3 most relevant documents from the list below.
 Return strict JSON: {"indices": [0, 2]}
 
@@ -242,7 +228,7 @@ ${summaryList}`),
   const contextText = contents.map(d => `【${d.category}/${d.filename}】\n${d.content}`).join("\n\n");
 
   // Answer generation — language directive forces English output.
-  const answer = await streamAnswer(model, [
+  const answer = await streamAnswer(env, [
     new SystemMessage(`You are an after-sales support assistant. Answer the user question using the knowledge-base documents below.
 Requirements:
 - Be concise and friendly; don't copy the source text verbatim
@@ -621,8 +607,7 @@ export async function requestExchange(state: AfterSalesStateType, context: any) 
 
 export async function generalChat(state: AfterSalesStateType, env: AgentEnv, runtime?: StreamRuntime) {
   const locale = "en" as Locale;
-  const model = createModel(env);
-  const answer = await streamAnswer(model, [
+  const answer = await streamAnswer(env, [
     new SystemMessage(`You are a friendly after-sales support assistant. You can help users:
 - Look up order status (needs an order ID)
 - Request a return / refund

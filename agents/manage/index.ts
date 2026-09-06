@@ -15,7 +15,7 @@
  * API; agent endpoints receive the full AgentMemory in context.store instead.
  */
 import { HumanMessage, SystemMessage } from "@langchain/core/messages";
-import { createModel } from "../_shared";
+import { invokeWithFallback } from "../_shared";
 import {
   getAllSummaries,
   getDocContent,
@@ -83,10 +83,9 @@ async function regenerateSummary(
   category: string,
   env: Record<string, string | undefined>
 ): Promise<{ summary: string; keywords: string[] }> {
-  const model = createModel(env);
   const truncated = content.length > 8000 ? content.slice(0, 8000) + "\n...[truncated]" : content;
 
-  const response = await model.invoke([
+  const response = await invokeWithFallback(env, [
     new SystemMessage(`You are a document summarizer. Given a document, generate:
 1. A concise summary (within 200 words) describing the core content and purpose.
 2. 5-10 keywords covering the main topics.

@@ -89,19 +89,24 @@ Open http://localhost:3000 for the workspace UI.
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `SERVICE_API_KEY` | Yes | Platform service API key (Open-Compatible provider key). |
-| `SERVICE_BASE_URL` | Yes | Gateway base URL, e.g. `https://gateway.edgeone.link/v1` for Makers Models. |
-| `SERVICE_MODEL` | No | Model identifier. Defaults to `@makers/deepseek-v4-flash`. |
+| `SERVICE_API_KEY` | Yes | AI provider API key (OpenAI-compatible; OpenRouter by default). |
+| `SERVICE_BASE_URL` | Yes | Gateway base URL, e.g. `https://openrouter.ai/api/v1`. |
+| `SERVICE_MODEL` | No | Model identifier. Defaults to `deepseek/deepseek-chat`. |
 | `DATABASE_URL` | Yes | Neon Postgres pooled connection string (database `after_sales`). Tables are created automatically on first request. |
 
 > Alias: `SERVICE_*` is the canonical naming in this workspace. `SERVICE_API_KEY`, `SERVICE_BASE_URL`, and `SERVICE_MODEL` are aliases for `AI_GATEWAY_API_KEY`, `AI_GATEWAY_BASE_URL`, and `AI_GATEWAY_MODEL` for backward compatibility. Either naming works; prefer `SERVICE_*` for new deployments.
 
 ### How to obtain SERVICE_API_KEY
 
-1. Open the Makers Console
-2. Sign in and enable Makers
-3. Go to Makers → Models → API Key and create a key
-4. Copy it into `SERVICE_API_KEY` in your `.env`
+1. Create an account at https://openrouter.ai and add credits
+2. Go to Keys and create an API key
+3. Copy it into `SERVICE_API_KEY` in your `.env` (any OpenAI-compatible
+   gateway works — set `SERVICE_BASE_URL` / `SERVICE_MODEL` accordingly)
+
+A backup provider can be configured via `SERVICE_BACKUP_API_KEY`,
+`SERVICE_BACKUP_BASE_URL`, and `SERVICE_BACKUP_MODEL` (aliases of the
+`AI_GATEWAY_BACKUP_*` variables); the app fails over automatically when the
+primary provider errors.
 
 ### Build
 

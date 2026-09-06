@@ -11,7 +11,7 @@
  * Streams progress via SSE: parsing → summarizing → saved.
  */
 import { HumanMessage, SystemMessage } from "@langchain/core/messages";
-import { createLogger, createModel, sseEvent, createSSEResponse } from "../_shared";
+import { createLogger, invokeWithFallback, sseEvent, createSSEResponse } from "../_shared";
 import { saveDoc, findDocByFilename, removeDoc, type DocCategory } from "../../lib/doc-store";
 import { parseDocument } from "../../lib/parser";
 import { t, getLocale, type Locale } from "../_i18n";
@@ -32,8 +32,6 @@ async function generateSummary(
   locale: Locale,
   env: AgentEnv
 ): Promise<{ summary: string; keywords: string[] }> {
-  const model = createModel(env);
-
   const truncated = content.length > 8000 ? content.slice(0, 8000) + "\n...[truncated]" : content;
 
   const sysPrompt = `You are a document summarizer. Given a document, generate:
@@ -46,7 +44,7 @@ Output STRICT JSON only (no other text):
 {"summary": "...", "keywords": ["k1", "k2", ...]}`;
   const userPrompt = `Filename: ${filename}\n\nContent:\n${truncated}`;
 
-  const response = await model.invoke([
+  const response = await invokeWithFallback(env, [
     new SystemMessage(sysPrompt),
     new HumanMessage(userPrompt),
   ]);

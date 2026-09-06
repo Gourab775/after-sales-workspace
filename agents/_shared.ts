@@ -3,34 +3,138 @@
  */
 import { ChatOpenAI } from "@langchain/openai";
 
-// ─── Model ───
+// ─── Model (primary + optional backup provider) ───
 
 type AgentEnv = Record<string, string | undefined>;
 
-// Cache models by credential fingerprint (baseURL::apiKey). No module-level
+export interface ModelConfig {
+  apiKey: string;
+  baseURL: string;
+  model: string;
+}
+
+/** Primary provider. Works with any OpenAI-compatible gateway (OpenRouter, etc.). */
+export function getPrimaryConfig(env: AgentEnv): ModelConfig {
+  return {
+    apiKey: env.AI_GATEWAY_API_KEY!,
+    baseURL: env.AI_GATEWAY_BASE_URL!,
+    model: env.AI_GATEWAY_MODEL || env.AI_MODEL || "deepseek/deepseek-chat",
+  };
+}
+
+/**
+ * Backup provider (optional). Configure AI_GATEWAY_BACKUP_API_KEY +
+ * AI_GATEWAY_BACKUP_BASE_URL (+ optional AI_GATEWAY_BACKUP_MODEL) to enable
+ * automatic failover when the primary provider errors.
+ */
+export function getBackupConfig(env: AgentEnv): ModelConfig | null {
+  const apiKey = env.AI_GATEWAY_BACKUP_API_KEY;
+  const baseURL = env.AI_GATEWAY_BACKUP_BASE_URL;
+  if (!apiKey || !baseURL) return null;
+  return { apiKey, baseURL, model: env.AI_GATEWAY_BACKUP_MODEL || "deepseek/deepseek-chat" };
+}
+
+// Cache models by credential fingerprint (baseURL::apiKey::model). No module-level
 // mutable env state — env is always passed in per request, so concurrent
 // requests never clobber each other.
 const _modelCache = new Map<string, ChatOpenAI>();
 
-export function createModel(env: AgentEnv): ChatOpenAI {
-  const apiKey = env.AI_GATEWAY_API_KEY;
-  const baseURL = env.AI_GATEWAY_BASE_URL;
-  const model = env.AI_GATEWAY_MODEL || env.AI_MODEL || "@makers/deepseek-v4-flash";
-  const cacheKey = `${baseURL ?? ""}::${apiKey ?? ""}::${model}`;
+function buildModel(cfg: ModelConfig): ChatOpenAI {
+  const cacheKey = `${cfg.baseURL}::${cfg.apiKey}::${cfg.model}`;
 
   let cached = _modelCache.get(cacheKey);
   if (cached) return cached;
 
+  const defaultHeaders: Record<string, string> = {};
+  if (cfg.baseURL.includes("openrouter.ai")) {
+    defaultHeaders["HTTP-Referer"] = "https://after-sales-workspace.vercel.app";
+    defaultHeaders["X-Title"] = "After-Sales Assistant";
+  }
+
   cached = new ChatOpenAI({
-    model,
-    apiKey: apiKey!,
+    model: cfg.model,
+    apiKey: cfg.apiKey,
     configuration: {
-      baseURL: baseURL!,
+      baseURL: cfg.baseURL,
+      defaultHeaders,
     },
     timeout: 300_000,
   });
   _modelCache.set(cacheKey, cached);
   return cached;
+}
+
+export function createModel(env: AgentEnv): ChatOpenAI {
+  return buildModel(getPrimaryConfig(env));
+}
+
+/** Backup model instance, or null when no backup provider is configured. */
+export function createBackupModel(env: AgentEnv): ChatOpenAI | null {
+  const cfg = getBackupConfig(env);
+  return cfg ? buildModel(cfg) : null;
+}
+
+type InvokeMessages = Parameters<ChatOpenAI["invoke"]>[0];
+
+function chunkText(content: unknown): string {
+  if (typeof content === "string") return content;
+  if (!Array.isArray(content)) return "";
+  return content.map(part => {
+    if (typeof part === "string") return part;
+    if (part && typeof part === "object" && "text" in part) return String((part as { text?: unknown }).text ?? "");
+    return "";
+  }).join("");
+}
+
+/** Non-streaming call with automatic failover to the backup provider. */
+export async function invokeWithFallback(
+  env: AgentEnv,
+  messages: InvokeMessages,
+  opts?: { signal?: AbortSignal }
+) {
+  const invokeOpts = opts?.signal ? { signal: opts.signal } : undefined;
+  try {
+    return await createModel(env).invoke(messages, invokeOpts);
+  } catch (e) {
+    const backup = createBackupModel(env);
+    if (!backup) throw e;
+    createLogger("model").log("Primary model failed, trying backup:", (e as Error).message);
+    return await backup.invoke(messages, invokeOpts);
+  }
+}
+
+/**
+ * Streaming call with automatic failover. Deltas go to onDelta; resolves with
+ * the full concatenated text. If the primary stream fails before/without
+ * producing output, the backup provider is tried.
+ */
+export async function streamWithFallback(
+  env: AgentEnv,
+  messages: InvokeMessages,
+  onDelta: (delta: string) => void,
+  opts?: { signal?: AbortSignal }
+): Promise<string> {
+  const tryStream = async (model: ChatOpenAI): Promise<string> => {
+    let answer = "";
+    const stream = await (model as any).stream(messages, opts?.signal ? { signal: opts.signal } : undefined);
+    for await (const chunk of stream) {
+      if (opts?.signal?.aborted) break;
+      const delta = chunkText(chunk?.content);
+      if (!delta) continue;
+      answer += delta;
+      onDelta(delta);
+    }
+    return answer;
+  };
+
+  try {
+    return await tryStream(createModel(env));
+  } catch (e) {
+    const backup = createBackupModel(env);
+    if (!backup) throw e;
+    createLogger("model").log("Primary stream failed, trying backup:", (e as Error).message);
+    return await tryStream(backup);
+  }
 }
 
 // ─── Logger ───
