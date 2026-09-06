@@ -45,11 +45,11 @@ async function saveState(context: any, threadId: string, state: Partial<AfterSal
 // ─── SSE Stream ───
 
 async function* streamStaticText(text: string, node: string, signal?: AbortSignal): AsyncGenerator<string> {
-  const chunkSize = 12;
+  const chunkSize = 24;
   for (let i = 0; i < text.length; i += chunkSize) {
     if (signal?.aborted) return;
     yield sseEvent({ type: "ai_response_delta", node, delta: text.slice(i, i + chunkSize) });
-    await new Promise(resolve => setTimeout(resolve, 12));
+    await new Promise(resolve => setTimeout(resolve, 8));
   }
 }
 

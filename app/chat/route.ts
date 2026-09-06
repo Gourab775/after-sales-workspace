@@ -1,5 +1,6 @@
 /** POST /chat — main assistant endpoint (Neon-backed on Next.js runtimes). */
 export const runtime = "nodejs";
+export const maxDuration = 60;
 
 import { onRequest } from "@/agents/chat/index";
 import { buildContext, readBody } from "@/lib/request-context";

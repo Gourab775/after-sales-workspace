@@ -39,7 +39,23 @@ export function getSql(env?: Record<string, string | undefined>): NeonQueryFunct
 
 /** Create tables if they do not exist (safe to run on every boot). */
 export async function ensureSchema(env?: Record<string, string | undefined>): Promise<void> {
-  const sql = getSql(env);
+  const url = getDatabaseUrl(env);
+  let pending = _schemaReady.get(url);
+  if (!pending) {
+    // Cache per connection string AND per serverless instance: without this,
+    // every request paid 8 sequential round-trips before doing real work.
+    pending = runSchema(getSql(env)).catch((e) => {
+      _schemaReady.delete(url);
+      throw e;
+    });
+    _schemaReady.set(url, pending);
+  }
+  return pending;
+}
+
+const _schemaReady = new Map<string, Promise<void>>();
+
+async function runSchema(sql: NeonQueryFunction<false, false>): Promise<void> {
   await sql`CREATE TABLE IF NOT EXISTS documents (
     doc_id TEXT PRIMARY KEY,
     category TEXT NOT NULL CHECK (category IN ('faq','policy','product','order_doc')),

@@ -59,6 +59,9 @@ function buildModel(cfg: ModelConfig): ChatOpenAI {
       defaultHeaders,
     },
     timeout: 300_000,
+    // Cap output length: responses are short support answers, and a smaller
+    // cap means faster generations on shared/rate-limited providers.
+    maxTokens: 2048,
     // Fail fast on rate limits so the backup provider (or a clean error to
     // the user) kicks in quickly instead of retrying for ~90s.
     maxRetries: 2,

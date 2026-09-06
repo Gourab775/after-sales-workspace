@@ -136,15 +136,15 @@ export async function intentRecognition(state: AfterSalesStateType, env: AgentEn
   }
   // Intent prompt returns a fixed JSON schema; classification works on English input.
   const response = await invokeWithFallback(env, [
-    new SystemMessage(`You are an after-sales support intent classifier. Given the user message, determine the intent and output JSON:
+    new SystemMessage(`You are an after-sales support intent classifier. The user may write in English, Hindi, or Hinglish (Hindi-English mix in Roman script, e.g. "mujhe refund chahiye", "mera order kahan hai", "return policy kya hai"). Understand the meaning regardless of language and output JSON:
 {"intent": "faq"|"lookup_order"|"refund"|"exchange"|"general", "orderId": "extract the order ID if mentioned, otherwise null", "reason": "brief explanation"}
 
-Intent guide:
-- faq: user asks about policies/rules/processes/product info (return policy, shipping, warranty, product usage, etc.) — covers all knowledge-base categories (faq/policy/product/order_doc)
-- lookup_order: user wants to check order status / shipping
-- refund: user wants to return an item or get a refund
-- exchange: user wants to exchange an item
-- general: chit-chat / greetings / anything else
+Intent guide with examples:
+- faq: policy/rules/process/product info questions. Ex: "What is the return policy?", "return policy kya hai?", "refund kitne din me aata hai?", "exchange me kitna time lagta hai?", "warranty hai kya?"
+- lookup_order: check order/shipping status. Ex: "Where is my order?", "mera order kahan hai?", "order track karo", "ORD-20250520-001 status?", "delivery kab hogi?"
+- refund: return/refund requests. Ex: "I want a refund", "mujhe refund chahiye", "paise wapas karo", "return karna hai", "refund apply karo"
+- exchange: exchange requests. Ex: "I want to exchange", "exchange karna hai", "size change karna hai", "dusra piece chahiye", "replace karo"
+- general: greetings/chit-chat. Ex: "hi", "hello", "namaste", "thanks", "shukriya", "kaise ho?"
 
 If the user mentions both an order ID and a return, prefer refund/exchange.`),
     new HumanMessage(state.userInput),
@@ -235,6 +235,7 @@ Requirements:
 - For procedures, give clear steps
 - If the user needs further help, ask them to share their order ID
 - Mention the document category your information comes from
+- The user may write in Hinglish (Hindi-English mix). Understand it fully, but ALWAYS respond in English.
 
 Knowledge-base documents:
 ${contextText}${languageDirective(locale)}`),
@@ -614,7 +615,7 @@ export async function generalChat(state: AfterSalesStateType, env: AgentEnv, run
 - Request an exchange
 - Answer after-sales policy questions
 
-If the user's question is vague, guide them to share more details. Keep it concise and friendly.${languageDirective(locale)}`),
+If the user's question is vague, guide them to share more details. Keep it concise and friendly. The user may write in Hinglish (Hindi-English mix) — understand it fully, but ALWAYS respond in English.${languageDirective(locale)}`),
     new HumanMessage(state.userInput),
   ], runtime, "general_chat");
   return {

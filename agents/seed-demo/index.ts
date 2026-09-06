@@ -46,27 +46,49 @@ async function* streamSeedDemo(store: any, locale: Locale, env: AgentEnv): Async
   let imported = 0;
   let failed = 0;
 
-  // ─── Import knowledge base documents ───
-  for (const doc of DEMO_DOCS) {
-    const docId = `demo-${doc.category}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+  // ─── Import knowledge base documents (parallel summaries, 4 at a time) ───
+  // Summary generation is the slow step (one LLM call per doc), so run a
+  // small pool concurrently instead of one-by-one. Progress events stream
+  // per finished group to keep the UI responsive.
+  const CONCURRENCY = 4;
+  const docIds = DEMO_DOCS.map(
+    doc => `demo-${doc.category}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`
+  );
+
+  for (let g = 0; g < DEMO_DOCS.length; g += CONCURRENCY) {
+    const group = DEMO_DOCS.slice(g, g + CONCURRENCY);
+    const groupIds = docIds.slice(g, g + CONCURRENCY);
     const stepNum = imported + failed + 1;
 
     yield sseEvent({
       type: "progress",
-      message: t(locale, "seed.indexing", { i: stepNum, n: total, title: doc.title }),
+      message: t(locale, "seed.indexing", { i: stepNum, n: total, title: group.map(d => d.title).join(", ") }),
       current: stepNum,
       total,
     });
 
-    try {
-      const { summary, keywords } = await generateSummary(doc.title, doc.content, locale, env);
-      await saveDoc(store, doc.category, docId, doc.title, doc.content, summary, keywords);
-      imported++;
-      yield sseEvent({ type: "doc_imported", docId, title: doc.title, category: doc.category, summary });
-    } catch (e) {
-      failed++;
-      logger.error(`Failed to import ${doc.title}:`, (e as Error).message);
-      yield sseEvent({ type: "doc_error", title: doc.title, error: (e as Error).message });
+    const results = await Promise.all(
+      group.map(async (doc, gi) => {
+        const docId = groupIds[gi];
+        try {
+          const { summary, keywords } = await generateSummary(doc.title, doc.content, locale, env);
+          await saveDoc(store, doc.category, docId, doc.title, doc.content, summary, keywords);
+          return { ok: true as const, doc, docId, summary };
+        } catch (e) {
+          logger.error(`Failed to import ${doc.title}:`, (e as Error).message);
+          return { ok: false as const, doc, error: (e as Error).message };
+        }
+      })
+    );
+
+    for (const r of results) {
+      if (r.ok) {
+        imported++;
+        yield sseEvent({ type: "doc_imported", docId: r.docId, title: r.doc.title, category: r.doc.category, summary: r.summary });
+      } else {
+        failed++;
+        yield sseEvent({ type: "doc_error", title: r.doc.title, error: r.error });
+      }
     }
   }
 
