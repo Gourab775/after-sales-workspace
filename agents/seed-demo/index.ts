@@ -4,7 +4,7 @@
  * Migrated from cloud-functions/seed-demo to bypass the 30s cloud-function
  * timeout (importing 11 docs needs 11 LLM summary calls back-to-back).
  *
- * Locale-aware: imports DEMO_DOCS_EN/ORDERS_EN when body.locale === "en".
+ * English-only: always imports the English demo set.
  */
 import { createLogger, createModel, createSSEResponse, sseEvent } from "../_shared";
 import { getDemoDocs, getDemoOrders } from "../_data/demo-docs";
@@ -18,12 +18,8 @@ type AgentEnv = Record<string, string | undefined>;
 
 async function generateSummary(title: string, content: string, locale: Locale, env: AgentEnv): Promise<{ summary: string; keywords: string[] }> {
   const model = createModel(env);
-  const sysPrompt = locale === "en"
-    ? `Generate a short summary (1-2 sentences) and 5 keywords for the document. Return JSON: {"summary":"...","keywords":["k1","k2","k3","k4","k5"]}`
-    : `为以下文档生成简短摘要（1-2句）和5个关键词。返回JSON：{"summary":"...","keywords":["k1","k2","k3","k4","k5"]}`;
-  const userPrompt = locale === "en"
-    ? `Title: ${title}\n\nContent: ${content.slice(0, 1500)}`
-    : `标题：${title}\n\n内容：${content.slice(0, 1500)}`;
+  const sysPrompt = `Generate a short summary (1-2 sentences) and 5 keywords for the document. Return JSON: {"summary":"...","keywords":["k1","k2","k3","k4","k5"]}`;
+  const userPrompt = `Title: ${title}\n\nContent: ${content.slice(0, 1500)}`;
   const response = await model.invoke([
     new SystemMessage(sysPrompt),
     new HumanMessage(userPrompt),

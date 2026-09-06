@@ -36,26 +36,15 @@ async function generateSummary(
 
   const truncated = content.length > 8000 ? content.slice(0, 8000) + "\n...[truncated]" : content;
 
-  const sysPrompt = locale === "en"
-    ? `You are a document summarizer. Given a document, generate:
+  const sysPrompt = `You are a document summarizer. Given a document, generate:
 1. A concise summary (within 200 words) describing the core content and purpose.
 2. 5-10 keywords covering the main topics.
 
 Document category: ${category}
 
 Output STRICT JSON only (no other text):
-{"summary": "...", "keywords": ["k1", "k2", ...]}`
-    : `你是一个文档摘要助手。给定一个文档，生成：
-1. 简明摘要（200字以内），概述核心内容和用途。
-2. 5-10个关键词，涵盖文档的主要主题。
-
-文档分类：${category}
-
-输出严格 JSON 格式（不含其他文本）：
-{"summary": "...", "keywords": ["关键词1", "关键词2", ...]}`;
-  const userPrompt = locale === "en"
-    ? `Filename: ${filename}\n\nContent:\n${truncated}`
-    : `文件名: ${filename}\n\n文档内容:\n${truncated}`;
+{"summary": "...", "keywords": ["k1", "k2", ...]}`;
+  const userPrompt = `Filename: ${filename}\n\nContent:\n${truncated}`;
 
   const response = await model.invoke([
     new SystemMessage(sysPrompt),

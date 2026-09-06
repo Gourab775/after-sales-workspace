@@ -122,14 +122,14 @@ async function lookupBlobOrderDoc(context: any, orderId: string): Promise<{
   }
 }
 
-/** Detect order status from free-text content (bilingual keywords). */
+/** Detect order status from free-text content (English keywords). */
 function detectStatusFromText(text: string): string {
-  const t = text.toLowerCase();
-  if (text.includes("换货申请") || t.includes("exchange_requested") || t.includes("exchange requested")) return "exchange_requested";
-  if (text.includes("退款申请") || text.includes("退款中") || t.includes("refund_requested") || t.includes("refund requested")) return "refund_requested";
-  if (text.includes("已签收") || text.includes("已收货") || text.includes("签收") || t.includes("delivered")) return "delivered";
-  if (text.includes("运输中") || text.includes("已发货") || text.includes("在途") || t.includes("shipped") || t.includes("in transit")) return "shipped";
-  if (text.includes("待发货") || text.includes("未发货") || t.includes("pending")) return "pending";
+  const lower = text.toLowerCase();
+  if (lower.includes("exchange_requested") || lower.includes("exchange requested")) return "exchange_requested";
+  if (lower.includes("refund_requested") || lower.includes("refund requested")) return "refund_requested";
+  if (lower.includes("delivered")) return "delivered";
+  if (lower.includes("shipped") || lower.includes("in transit")) return "shipped";
+  if (lower.includes("pending")) return "pending";
   return "unknown";
 }
 
@@ -147,19 +147,19 @@ export async function intentRecognition(state: AfterSalesStateType, env: AgentEn
     return { intent: state.intent, orderId, waitingForUser: false };
   }
   const model = createModel(env);
-  // Intent prompt stays in Chinese — returns fixed JSON schema, LLM understands EN input fine
+  // Intent prompt returns a fixed JSON schema; classification works on English input.
   const response = await model.invoke([
-    new SystemMessage(`你是一个售后客服意图分类器。根据用户消息（无论中文还是英文）判断意图，输出 JSON：
-{"intent": "faq"|"lookup_order"|"refund"|"exchange"|"general", "orderId": "如有提到订单号则提取，否则null", "reason": "简要说明"}
+    new SystemMessage(`You are an after-sales support intent classifier. Given the user message, determine the intent and output JSON:
+{"intent": "faq"|"lookup_order"|"refund"|"exchange"|"general", "orderId": "extract the order ID if mentioned, otherwise null", "reason": "brief explanation"}
 
-意图说明：
-- faq: 用户询问政策/规则/流程/产品信息（退货政策、运费、保修、产品使用说明等）——覆盖知识库中所有文档类别（faq/policy/product/order_doc）
-- lookup_order: 用户要查订单状态/物流
-- refund: 用户要退货或退款
-- exchange: 用户要换货
-- general: 闲聊/打招呼/其他
+Intent guide:
+- faq: user asks about policies/rules/processes/product info (return policy, shipping, warranty, product usage, etc.) — covers all knowledge-base categories (faq/policy/product/order_doc)
+- lookup_order: user wants to check order status / shipping
+- refund: user wants to return an item or get a refund
+- exchange: user wants to exchange an item
+- general: chit-chat / greetings / anything else
 
-如果用户同时提到订单号和退货，优先判断为 refund/exchange。`),
+If the user mentions both an order ID and a return, prefer refund/exchange.`),
     new HumanMessage(state.userInput),
   ], runtime?.signal ? { signal: runtime.signal } : undefined);
 
@@ -181,7 +181,7 @@ export async function intentRecognition(state: AfterSalesStateType, env: AgentEn
 // ─── FAQ Search (Knowledge Base) ───
 
 export async function faqSearch(state: AfterSalesStateType, env: AgentEnv, context: any, runtime?: StreamRuntime) {
-  const locale = (state.locale || "zh") as Locale;
+  const locale = "en" as Locale;
   const summaries = await getAllSummaries(context.store);
   logger.log(`Knowledge base has ${summaries.length} documents`);
 
@@ -196,14 +196,14 @@ export async function faqSearch(state: AfterSalesStateType, env: AgentEnv, conte
   const model = createModel(env);
   const summaryList = summaries.map((s, i) => `[${i}] 【${s.category}】${s.filename}: ${s.summary} (keywords: ${s.keywords.join(", ")})`).join("\n");
 
-  // Routing prompt — output is fixed JSON schema, language doesn't matter
+  // Routing prompt — output is a fixed JSON schema.
   const routeResponse = await model.invoke([
-    new SystemMessage(`你是一个文档路由助手。根据用户问题（中英文均可），从以下文档列表中选择 1-3 个最相关的文档。
-返回严格 JSON 格式：{"indices": [0, 2]}
+    new SystemMessage(`You are a document routing assistant. Given the user question, pick the 1-3 most relevant documents from the list below.
+Return strict JSON: {"indices": [0, 2]}
 
-如果没有相关文档，返回：{"indices": []}
+If no document is relevant, return: {"indices": []}
 
-文档列表：
+Document list:
 ${summaryList}`),
     new HumanMessage(state.userInput),
   ], runtime?.signal ? { signal: runtime.signal } : undefined);
@@ -241,16 +241,16 @@ ${summaryList}`),
 
   const contextText = contents.map(d => `【${d.category}/${d.filename}】\n${d.content}`).join("\n\n");
 
-  // Answer generation — language directive forces output in user locale
+  // Answer generation — language directive forces English output.
   const answer = await streamAnswer(model, [
-    new SystemMessage(`你是售后客服助手。根据以下知识库文档回答用户问题。
-要求：
-- 简洁友好，不要照搬原文
-- 如果涉及具体操作，给出清晰步骤
-- 如果用户需要进一步帮助，引导他提供订单号
-- 注明信息来源的文档类别
+    new SystemMessage(`You are an after-sales support assistant. Answer the user question using the knowledge-base documents below.
+Requirements:
+- Be concise and friendly; don't copy the source text verbatim
+- For procedures, give clear steps
+- If the user needs further help, ask them to share their order ID
+- Mention the document category your information comes from
 
-知识库文档：
+Knowledge-base documents:
 ${contextText}${languageDirective(locale)}`),
     new HumanMessage(state.userInput),
   ], runtime, "faq_search");
@@ -267,8 +267,8 @@ ${contextText}${languageDirective(locale)}`),
 // ─── Lookup Order ───
 
 export async function lookupOrder(state: AfterSalesStateType, context: any) {
-  const locale = (state.locale || "zh") as Locale;
-  const sep = locale === "en" ? ", " : "、";
+  const locale = "en" as Locale;
+  const sep = ", ";
   const orderId = state.orderId;
 
   if (!orderId) {
@@ -342,9 +342,9 @@ export async function lookupOrder(state: AfterSalesStateType, context: any) {
 // ─── Request Refund ───
 
 export async function requestRefund(state: AfterSalesStateType, context: any) {
-  const locale = (state.locale || "zh") as Locale;
-  const sep = locale === "en" ? ", " : "、";
-  const ineligibleNote = (label: string) => locale === "en" ? ` *(${label}, not eligible for refund)*` : ` *(${label}，暂不可退款)*`;
+  const locale = "en" as Locale;
+  const sep = ", ";
+  const ineligibleNote = (label: string) => ` *(${label}, not eligible for refund)*`;
 
   if (!state.currentOrder && !state.orderId) {
     const [storeOrders, blobSummaries] = await Promise.all([
@@ -406,11 +406,9 @@ export async function requestRefund(state: AfterSalesStateType, context: any) {
         };
       }
 
-      const refundMarker = locale === "en"
-        ? `\n\n---\nRefund request submitted (${new Date().toISOString().split("T")[0]})`
-        : `\n\n---\n退款申请已提交（${new Date().toISOString().split("T")[0]}）`;
+      const refundMarker = `\n\n---\nRefund request submitted (${new Date().toISOString().split("T")[0]})`;
       const updatedContent = `${blobDoc.content}${refundMarker}`;
-      const refundKeyword = locale === "en" ? "refund_requested" : "退款申请中";
+      const refundKeyword = "refund_requested";
       try {
         await saveDoc(
           context.store,
@@ -420,7 +418,7 @@ export async function requestRefund(state: AfterSalesStateType, context: any) {
           updatedContent,
           blobDoc.summary,
           [
-            ...blobDoc.keywords.filter(k => !k.includes("退款") && !k.includes("换货") && !k.includes("refund") && !k.includes("exchange")),
+            ...blobDoc.keywords.filter(k => !k.includes("refund") && !k.includes("exchange")),
             refundKeyword,
           ]
         );
@@ -434,10 +432,10 @@ export async function requestRefund(state: AfterSalesStateType, context: any) {
             order: {
               orderId,
               status: "refund_requested",
-              refundReason: locale === "en" ? "Customer requested refund" : "用户申请退货退款",
+              refundReason: "Customer requested refund",
               refundAmount: 0,
               totalAmount: 0,
-              items: [{ name: locale === "en" ? "Item (see order document)" : "商品（详见订单文档）" }],
+              items: [{ name: "Item (see order document)" }],
               updatedAt: new Date().toISOString(),
             },
           },
@@ -472,7 +470,7 @@ export async function requestRefund(state: AfterSalesStateType, context: any) {
   const updatedOrder = {
     ...order,
     status: "refund_requested" as const,
-    refundReason: state.refundReason || (locale === "en" ? "Customer requested refund" : "用户申请退货退款"),
+    refundReason: state.refundReason || "Customer requested refund",
     refundAmount: order.totalAmount,
     updatedAt: new Date().toISOString(),
   };
@@ -490,9 +488,9 @@ export async function requestRefund(state: AfterSalesStateType, context: any) {
 // ─── Request Exchange ───
 
 export async function requestExchange(state: AfterSalesStateType, context: any) {
-  const locale = (state.locale || "zh") as Locale;
-  const sep = locale === "en" ? ", " : "、";
-  const ineligibleNote = (label: string) => locale === "en" ? ` *(${label}, not eligible for exchange)*` : ` *(${label}，暂不可换货)*`;
+  const locale = "en" as Locale;
+  const sep = ", ";
+  const ineligibleNote = (label: string) => ` *(${label}, not eligible for exchange)*`;
 
   if (!state.currentOrder && !state.orderId) {
     const [storeOrders, blobSummaries] = await Promise.all([
@@ -554,11 +552,9 @@ export async function requestExchange(state: AfterSalesStateType, context: any) 
         };
       }
 
-      const exchangeMarker = locale === "en"
-        ? `\n\n---\nExchange request submitted (${new Date().toISOString().split("T")[0]})`
-        : `\n\n---\n换货申请已提交（${new Date().toISOString().split("T")[0]}）`;
+      const exchangeMarker = `\n\n---\nExchange request submitted (${new Date().toISOString().split("T")[0]})`;
       const updatedContent = `${blobDoc.content}${exchangeMarker}`;
-      const exchangeKeyword = locale === "en" ? "exchange_requested" : "换货申请中";
+      const exchangeKeyword = "exchange_requested";
       try {
         await saveDoc(
           context.store,
@@ -568,7 +564,7 @@ export async function requestExchange(state: AfterSalesStateType, context: any) 
           updatedContent,
           blobDoc.summary,
           [
-            ...blobDoc.keywords.filter(k => !k.includes("退款") && !k.includes("换货") && !k.includes("refund") && !k.includes("exchange")),
+            ...blobDoc.keywords.filter(k => !k.includes("refund") && !k.includes("exchange")),
             exchangeKeyword,
           ]
         );
@@ -582,8 +578,8 @@ export async function requestExchange(state: AfterSalesStateType, context: any) 
             order: {
               orderId,
               status: "exchange_requested",
-              items: [{ name: locale === "en" ? "Item (see order document)" : "商品（详见订单文档）", specs: "-" }],
-              exchangeReason: state.exchangeTarget || (locale === "en" ? "Customer requested exchange" : "用户申请换货"),
+              items: [{ name: "Item (see order document)", specs: "-" }],
+              exchangeReason: state.exchangeTarget || "Customer requested exchange",
               updatedAt: new Date().toISOString(),
             },
           },
@@ -607,7 +603,7 @@ export async function requestExchange(state: AfterSalesStateType, context: any) 
   const updatedOrder = {
     ...order,
     status: "exchange_requested" as const,
-    exchangeReason: state.exchangeTarget || (locale === "en" ? "Customer requested exchange" : "用户申请换货"),
+    exchangeReason: state.exchangeTarget || "Customer requested exchange",
     updatedAt: new Date().toISOString(),
   };
 
@@ -624,16 +620,16 @@ export async function requestExchange(state: AfterSalesStateType, context: any) 
 // ─── General Chat ───
 
 export async function generalChat(state: AfterSalesStateType, env: AgentEnv, runtime?: StreamRuntime) {
-  const locale = (state.locale || "zh") as Locale;
+  const locale = "en" as Locale;
   const model = createModel(env);
   const answer = await streamAnswer(model, [
-    new SystemMessage(`你是一个友好的售后客服助手。可以帮助用户：
-- 查询订单状态（需要订单号）
-- 申请退货/退款
-- 申请换货
-- 回答售后政策问题
+    new SystemMessage(`You are a friendly after-sales support assistant. You can help users:
+- Look up order status (needs an order ID)
+- Request a return / refund
+- Request an exchange
+- Answer after-sales policy questions
 
-如果用户的问题模糊，引导他们提供更多信息。保持简洁友好。${languageDirective(locale)}`),
+If the user's question is vague, guide them to share more details. Keep it concise and friendly.${languageDirective(locale)}`),
     new HumanMessage(state.userInput),
   ], runtime, "general_chat");
   return {

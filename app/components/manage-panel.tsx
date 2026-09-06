@@ -11,7 +11,6 @@ interface DocItem {
   keywords: string[];
   charCount: number;
   uploadedAt: string;
-  // Optional fields for order_doc entries (parsed from content by backend)
   totalAmount?: number;
   carrier?: string;
   trackingNumber?: string;
@@ -40,81 +39,81 @@ interface OrderRecord {
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  pending: "bg-amber-50 text-amber-600",
-  shipped: "bg-blue-50 text-blue-600",
-  delivered: "bg-green-50 text-green-600",
-  refund_requested: "bg-rose-50 text-rose-600",
-  refund_approved: "bg-rose-50 text-rose-600",
-  refund_completed: "bg-rose-50 text-rose-600",
-  exchange_requested: "bg-purple-50 text-purple-600",
-  exchange_shipped: "bg-purple-50 text-purple-600",
+  pending: "bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-300",
+  shipped: "bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-300",
+  delivered: "bg-green-50 text-green-600 dark:bg-green-950/40 dark:text-green-300",
+  refund_requested: "bg-rose-50 text-rose-600 dark:bg-rose-950/40 dark:text-rose-300",
+  refund_approved: "bg-rose-50 text-rose-600 dark:bg-rose-950/40 dark:text-rose-300",
+  refund_completed: "bg-rose-50 text-rose-600 dark:bg-rose-950/40 dark:text-rose-300",
+  exchange_requested: "bg-purple-50 text-purple-600 dark:bg-purple-950/40 dark:text-purple-300",
+  exchange_shipped: "bg-purple-50 text-purple-600 dark:bg-purple-950/40 dark:text-purple-300",
 };
 
 // Order ID pattern (e.g. ORD-20250520-001)
 const ORDER_FILENAME_RE = /^ORD-\d{8}-\d{3,}/i;
 
-/** Detect order status from free-text — bilingual keywords. */
+/** Detect order status from free-text (English keywords). */
 function detectStatusFromText(text: string): string | null {
   const lower = text.toLowerCase();
-  if (text.includes("换货申请") || lower.includes("exchange_requested") || lower.includes("exchange request")) return "exchange_requested";
-  if (text.includes("退款申请") || text.includes("退款中") || lower.includes("refund_requested") || lower.includes("refund request")) return "refund_requested";
-  if (text.includes("已签收") || text.includes("已收货") || text.includes("签收") || lower.includes("delivered")) return "delivered";
-  if (text.includes("运输中") || text.includes("已发货") || text.includes("在途") || lower.includes("shipped") || lower.includes("in transit")) return "shipped";
-  if (text.includes("待发货") || text.includes("未发货") || lower.includes("pending")) return "pending";
+  if (lower.includes("exchange_requested") || lower.includes("exchange request")) return "exchange_requested";
+  if (lower.includes("refund_requested") || lower.includes("refund request")) return "refund_requested";
+  if (lower.includes("delivered")) return "delivered";
+  if (lower.includes("shipped") || lower.includes("in transit")) return "shipped";
+  if (lower.includes("pending")) return "pending";
   return null;
 }
 
-// Order example data for Tab autocomplete — bilingual sets
-const ORDER_EXAMPLES_ZH = [
+// Order example data for Tab autocomplete
+const ORDER_EXAMPLES = [
   {
     id: "ORD-20250520-001",
-    content: `商品：无线降噪耳机 Pro\n规格：黑色 / 标准版\n数量：1\n金额：¥1299\n状态：已签收\n下单时间：2025-05-20\n签收时间：2025-05-22\n快递：顺丰速运 SF1234567890\n备注：用户已确认收货`,
+    content: `Product: Wireless Noise-Cancelling Headphones Pro\nSpecs: Black / Standard\nQty: 1\nAmount: 1299\nStatus: Delivered\nOrdered: 2025-05-20\nDelivered: 2025-05-22\nShipping: SF Express SF1234567890\nNote: Customer confirmed receipt`,
   },
   {
     id: "ORD-20250518-002",
-    content: `商品：智能手表 Ultra\n规格：钛金属 / 49mm\n数量：1\n金额：¥3999\n状态：运输中\n下单时间：2025-05-18\n快递：圆通快递 YT9876543210\n预计到达：2025-05-23\n备注：用户询问物流进度`,
+    content: `Product: Smart Watch Ultra\nSpecs: Titanium / 49mm\nQty: 1\nAmount: 3999\nStatus: Shipped\nOrdered: 2025-05-18\nShipping: YTO Express YT9876543210\nETA: 2025-05-23\nNote: Customer asking about delivery progress`,
   },
   {
     id: "ORD-20250515-003",
-    content: `商品：便携蓝牙音箱\n规格：星空蓝 / 标准版\n数量：2\n金额：¥598\n状态：已签收\n下单时间：2025-05-15\n签收时间：2025-05-17\n快递：韵达快递 YD1122334455\n备注：用户反映音质问题，申请换货`,
+    content: `Product: Portable Bluetooth Speaker\nSpecs: Starry Blue / Standard\nQty: 2\nAmount: 598\nStatus: Delivered\nOrdered: 2025-05-15\nDelivered: 2025-05-17\nShipping: Yunda Express YD1122334455\nNote: Customer reports sound quality issue, requesting exchange`,
   },
   {
     id: "ORD-20250510-004",
-    content: `商品：机械键盘 87键\n规格：茶轴 / 黑色\n数量：1\n金额：¥499\n状态：待发货\n下单时间：2025-05-10\n预计发货：2025-05-25\n备注：库存紧张，等待补货`,
+    content: `Product: Mechanical Keyboard 87-key\nSpecs: Brown Switch / Black\nQty: 1\nAmount: 499\nStatus: Pending\nOrdered: 2025-05-10\nETA Shipping: 2025-05-25\nNote: Stock low, awaiting restock`,
   },
 ];
 
-const ORDER_EXAMPLES_EN = [
-  {
-    id: "ORD-20250520-001",
-    content: `Product: Wireless Noise-Cancelling Headphones Pro\nSpecs: Black / Standard\nQty: 1\nAmount: ¥1299\nStatus: Delivered\nOrdered: 2025-05-20\nDelivered: 2025-05-22\nShipping: SF Express SF1234567890\nNote: Customer confirmed receipt`,
-  },
-  {
-    id: "ORD-20250518-002",
-    content: `Product: Smart Watch Ultra\nSpecs: Titanium / 49mm\nQty: 1\nAmount: ¥3999\nStatus: Shipped\nOrdered: 2025-05-18\nShipping: YTO Express YT9876543210\nETA: 2025-05-23\nNote: Customer asking about delivery progress`,
-  },
-  {
-    id: "ORD-20250515-003",
-    content: `Product: Portable Bluetooth Speaker\nSpecs: Starry Blue / Standard\nQty: 2\nAmount: ¥598\nStatus: Delivered\nOrdered: 2025-05-15\nDelivered: 2025-05-17\nShipping: Yunda Express YD1122334455\nNote: Customer reports sound quality issue, requesting exchange`,
-  },
-  {
-    id: "ORD-20250510-004",
-    content: `Product: Mechanical Keyboard 87-key\nSpecs: Brown Switch / Black\nQty: 1\nAmount: ¥499\nStatus: Pending\nOrdered: 2025-05-10\nETA Shipping: 2025-05-25\nNote: Stock low, awaiting restock`,
-  },
-];
+const CATEGORY_DOT: Record<string, string> = {
+  faq: "bg-blue-500",
+  policy: "bg-amber-500",
+  product: "bg-emerald-500",
+  order_doc: "bg-purple-500",
+};
+
+function DocIcon({ category, isOrder }: { category: string; isOrder: boolean }) {
+  if (isOrder) {
+    return (
+      <svg className="h-3.5 w-3.5 text-purple-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 14.25c0 2.485 2.686 4.5 6 4.5s6-2.015 6-4.5-2.686-4.5-6-4.5c-1.634 0-3.116.492-4.2 1.295M9 14.25c0-2.485 2.686-4.5 6-4.5m-6 4.5v-2.7c0-1.657 1.343-3 3-3h1.5M3 5.25h18M3 5.25v13.5h18V5.25M3 5.25l1.2-1.8h15.6L21 5.25" />
+      </svg>
+    );
+  }
+  return (
+    <svg className="h-3.5 w-3.5 text-gray-400 dark:text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+    </svg>
+  );
+}
 
 export function ManagePanel({ onClose }: { onClose: () => void }) {
-  const { t, locale } = useT();
+  const { t } = useT();
 
-  // Localized categories (recompute on locale change)
   const CATEGORIES = useMemo(() => [
-    { value: "faq", label: t("ui.manage.cat.faq"), icon: "💬", color: "blue" },
-    { value: "policy", label: t("ui.manage.cat.policy"), icon: "📋", color: "amber" },
-    { value: "product", label: t("ui.manage.cat.product"), icon: "📦", color: "emerald" },
-    { value: "order_doc", label: t("ui.manage.cat.order_doc"), icon: "🧾", color: "purple" },
+    { value: "faq", label: t("ui.manage.cat.faq") },
+    { value: "policy", label: t("ui.manage.cat.policy") },
+    { value: "product", label: t("ui.manage.cat.product") },
+    { value: "order_doc", label: t("ui.manage.cat.order_doc") },
   ], [t]);
-
-  const ORDER_EXAMPLES = locale === "en" ? ORDER_EXAMPLES_EN : ORDER_EXAMPLES_ZH;
 
   const [docs, setDocs] = useState<DocItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -134,8 +133,6 @@ export function ManagePanel({ onClose }: { onClose: () => void }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const tabCycleRef = useRef(0);
   const loadDocsAbortRef = useRef<AbortController | null>(null);
-  // /seed-demo and /upload are now agent endpoints — they require makers-conversation-id header.
-  // /manage is still a cloud-function so it doesn't need this header (and we keep it unchanged).
   const conversationId = useMemo(() => {
     const KEY = "after-sales-conversation-id";
     try {
@@ -157,7 +154,7 @@ export function ManagePanel({ onClose }: { onClose: () => void }) {
 
     setIsLoading(true);
     try {
-      const body: any = { action: "list", locale };
+      const body: any = { action: "list", locale: "en" };
       if (activeCategory !== "all") body.category = activeCategory;
       const res = await fetch("/manage", {
         method: "POST",
@@ -177,7 +174,7 @@ export function ManagePanel({ onClose }: { onClose: () => void }) {
     } finally {
       if (!ac.signal.aborted) setIsLoading(false);
     }
-  }, [activeCategory, locale]);
+  }, [activeCategory, conversationId]);
 
   useEffect(() => { loadDocs(); }, [loadDocs]);
 
@@ -189,7 +186,7 @@ export function ManagePanel({ onClose }: { onClose: () => void }) {
           "Content-Type": "application/json",
           "makers-conversation-id": conversationId,
         },
-        body: JSON.stringify({ action: "list_orders", locale }),
+        body: JSON.stringify({ action: "list_orders", locale: "en" }),
       });
       if (res.ok) {
         const data = await res.json();
@@ -198,7 +195,7 @@ export function ManagePanel({ onClose }: { onClose: () => void }) {
         }
       }
     } catch {}
-  }, [locale]);
+  }, [conversationId]);
 
   useEffect(() => { loadOrdersList(); }, [loadOrdersList]);
 
@@ -211,7 +208,7 @@ export function ManagePanel({ onClose }: { onClose: () => void }) {
           "Content-Type": "application/json",
           "makers-conversation-id": conversationId,
         },
-        body: JSON.stringify({ action: "get", docId, category, locale }),
+        body: JSON.stringify({ action: "get", docId, category, locale: "en" }),
       });
       if (res.ok) {
         const data = await res.json();
@@ -229,7 +226,7 @@ export function ManagePanel({ onClose }: { onClose: () => void }) {
           "Content-Type": "application/json",
           "makers-conversation-id": conversationId,
         },
-        body: JSON.stringify({ action: "delete", docId, category, locale }),
+        body: JSON.stringify({ action: "delete", docId, category, locale: "en" }),
       });
       setDocs(prev => prev.filter(d => d.docId !== docId));
     } catch {}
@@ -250,7 +247,7 @@ export function ManagePanel({ onClose }: { onClose: () => void }) {
             "Content-Type": "application/json",
             "makers-conversation-id": conversationId,
           },
-          body: JSON.stringify({ file: base64, filename: file.name, category: uploadCategory, locale }),
+          body: JSON.stringify({ file: base64, filename: file.name, category: uploadCategory, locale: "en" }),
         });
         if (!res.ok) throw new Error("Upload failed");
         const reader2 = res.body?.getReader();
@@ -292,7 +289,7 @@ export function ManagePanel({ onClose }: { onClose: () => void }) {
           "Content-Type": "application/json",
           "makers-conversation-id": conversationId,
         },
-        body: JSON.stringify({ text: formContent, title: formTitle, category: formCategory, locale }),
+        body: JSON.stringify({ text: formContent, title: formTitle, category: formCategory, locale: "en" }),
       });
       if (!res.ok) throw new Error("Save failed");
       const reader = res.body?.getReader();
@@ -340,7 +337,7 @@ export function ManagePanel({ onClose }: { onClose: () => void }) {
           "Content-Type": "application/json",
           "makers-conversation-id": conversationId,
         },
-        body: JSON.stringify({ locale }),
+        body: JSON.stringify({ locale: "en" }),
       });
       if (!res.ok) throw new Error("Seed failed");
       const reader = res.body?.getReader();
@@ -389,37 +386,40 @@ export function ManagePanel({ onClose }: { onClose: () => void }) {
   const orderTagLabel = t("ui.manage.label.order");
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex h-full flex-col">
       {/* Header */}
-      <div className="h-12 flex items-center justify-between px-4 border-b border-gray-100 flex-shrink-0">
-        <span className="text-[13px] font-semibold text-gray-800">{t("ui.manage.title")}</span>
-        <button onClick={onClose} className="w-6 h-6 flex items-center justify-center rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors text-lg leading-none">&times;</button>
+      <div className="flex h-12 flex-shrink-0 items-center justify-between border-b border-gray-100 px-4 dark:border-slate-800">
+        <span className="text-[13px] font-semibold text-gray-800 dark:text-slate-100">{t("ui.manage.title")}</span>
+        <button onClick={onClose} aria-label="Close" className="flex h-6 w-6 items-center justify-center rounded-md text-lg leading-none text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-slate-800 dark:hover:text-slate-300">&times;</button>
       </div>
 
       {/* Category filter */}
-      <div className="px-3 py-2 flex gap-1.5 border-b border-gray-50 flex-shrink-0">
+      <div className="flex flex-shrink-0 gap-1.5 border-b border-gray-50 px-3 py-2 dark:border-slate-800/60">
         <button
           onClick={() => setActiveCategory("all")}
-          className={`text-[11px] px-2.5 py-1 rounded-md font-medium transition-all ${
-            activeCategory === "all" ? "bg-gray-900 text-white shadow-sm" : "text-gray-500 hover:bg-gray-100"
+          className={`rounded-md px-2.5 py-1 text-[11px] font-medium transition-all ${
+            activeCategory === "all" ? "bg-gray-900 text-white shadow-sm dark:bg-slate-100 dark:text-slate-900" : "text-gray-500 hover:bg-gray-100 dark:text-slate-400 dark:hover:bg-slate-800"
           }`}
         >{t("ui.manage.tabAll")}</button>
         {CATEGORIES.map(cat => (
           <button
             key={cat.value}
             onClick={() => setActiveCategory(cat.value)}
-            className={`text-[11px] px-2.5 py-1 rounded-md font-medium transition-all ${
-              activeCategory === cat.value ? "bg-gray-900 text-white shadow-sm" : "text-gray-500 hover:bg-gray-100"
+            className={`rounded-md px-2.5 py-1 text-[11px] font-medium transition-all ${
+              activeCategory === cat.value ? "bg-gray-900 text-white shadow-sm dark:bg-slate-100 dark:text-slate-900" : "text-gray-500 hover:bg-gray-100 dark:text-slate-400 dark:hover:bg-slate-800"
             }`}
-          >{cat.icon} {cat.label}</button>
+          >
+            <span className={`mr-1.5 inline-block h-1.5 w-1.5 rounded-full ${CATEGORY_DOT[cat.value] || "bg-gray-400"}`} />
+            {cat.label}
+          </button>
         ))}
       </div>
 
       {/* Actions bar */}
-      <div className="px-3 py-2.5 flex items-center gap-2 border-b border-gray-50 flex-shrink-0">
+      <div className="flex flex-shrink-0 items-center gap-2 border-b border-gray-50 px-3 py-2.5 dark:border-slate-800/60">
         <button
           onClick={() => fileInputRef.current?.click()}
-          className="text-[11px] h-7 px-2.5 rounded-md bg-gray-900 text-white font-medium hover:bg-gray-800 transition-colors"
+          className="h-7 rounded-md bg-gray-900 px-2.5 text-[11px] font-medium text-white transition-colors hover:bg-gray-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white"
         >{t("ui.manage.btn.upload")}</button>
         <button
           onClick={() => {
@@ -428,39 +428,39 @@ export function ManagePanel({ onClose }: { onClose: () => void }) {
             }
             setShowAddForm(!showAddForm);
           }}
-          className="text-[11px] h-7 px-2.5 rounded-md border border-gray-200 text-gray-700 font-medium hover:bg-gray-50 transition-colors"
+          className="h-7 rounded-md border border-gray-200 px-2.5 text-[11px] font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
         >{t("ui.manage.btn.addManual")}</button>
         <button
           onClick={handleSeedDemo}
           disabled={!!demoProgress}
-          className="text-[11px] h-7 px-2.5 rounded-md bg-indigo-50 text-indigo-600 font-medium hover:bg-indigo-100 border border-indigo-200 disabled:opacity-50 transition-colors ml-auto"
+          className="ml-auto h-7 rounded-md border border-indigo-200 bg-indigo-50 px-2.5 text-[11px] font-medium text-indigo-600 transition-colors hover:bg-indigo-100 disabled:opacity-50 dark:border-indigo-900/60 dark:bg-indigo-950/40 dark:text-indigo-300 dark:hover:bg-indigo-950/70"
         >{t("ui.manage.btn.importDemo")}</button>
         <input ref={fileInputRef} type="file" className="hidden" accept=".txt,.md,.pdf,.docx,.doc,.xlsx,.xls,.csv,.json" onChange={handleFileUpload} />
       </div>
 
       {/* Demo import progress */}
       {(demoProgress || demoCurrentDoc) && (
-        <div className="px-3 py-2.5 bg-indigo-50 border-b border-indigo-100 flex-shrink-0 space-y-2">
+        <div className="flex-shrink-0 space-y-2 border-b border-indigo-100 bg-indigo-50 px-3 py-2.5 dark:border-indigo-900/40 dark:bg-indigo-950/30">
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin flex-shrink-0" />
-            <span className="text-[11px] text-indigo-700 font-medium flex-1 truncate">{demoProgress}</span>
+            <div className="h-3 w-3 flex-shrink-0 animate-spin rounded-full border-2 border-indigo-400 border-t-transparent" />
+            <span className="flex-1 truncate text-[11px] font-medium text-indigo-700 dark:text-indigo-300">{demoProgress}</span>
             {demoTotal > 0 && (
-              <span className="text-[10px] text-indigo-400 flex-shrink-0">{demoImportedCount}/{demoTotal}</span>
+              <span className="flex-shrink-0 text-[10px] text-indigo-400">{demoImportedCount}/{demoTotal}</span>
             )}
           </div>
           {demoTotal > 0 && (
-            <div className="h-1 bg-indigo-100 rounded-full overflow-hidden">
+            <div className="h-1 overflow-hidden rounded-full bg-indigo-100 dark:bg-indigo-950">
               <div
-                className="h-full bg-indigo-500 rounded-full transition-all duration-300"
+                className="h-full rounded-full bg-indigo-500 transition-all duration-300"
                 style={{ width: `${(demoImportedCount / demoTotal) * 100}%` }}
               />
             </div>
           )}
           {demoCurrentDoc && (
-            <div className="flex items-center gap-2 py-1 px-2 bg-white rounded-md border border-indigo-100">
-              <span className="text-[11px] flex-shrink-0">{CATEGORIES.find(c => c.value === demoCurrentDoc.category)?.icon || "📄"}</span>
-              <span className="text-[11px] text-gray-700 truncate flex-1">{demoCurrentDoc.title}</span>
-              <span className="text-[10px] text-indigo-400 flex-shrink-0">{CATEGORIES.find(c => c.value === demoCurrentDoc.category)?.label}</span>
+            <div className="flex items-center gap-2 rounded-md border border-indigo-100 bg-white px-2 py-1 dark:border-indigo-900/50 dark:bg-slate-900">
+              <span className={`h-1.5 w-1.5 flex-shrink-0 rounded-full ${CATEGORY_DOT[demoCurrentDoc.category] || "bg-gray-400"}`} />
+              <span className="flex-1 truncate text-[11px] text-gray-700 dark:text-slate-300">{demoCurrentDoc.title}</span>
+              <span className="flex-shrink-0 text-[10px] text-indigo-400">{catMeta(demoCurrentDoc.category)?.label}</span>
             </div>
           )}
         </div>
@@ -468,15 +468,15 @@ export function ManagePanel({ onClose }: { onClose: () => void }) {
 
       {/* Upload progress */}
       {uploadProgress && (
-        <div className="px-3 py-1.5 bg-indigo-50 flex items-center gap-2 flex-shrink-0">
-          <div className="w-3 h-3 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin" />
-          <span className="text-[11px] text-indigo-700">{uploadProgress}</span>
+        <div className="flex flex-shrink-0 items-center gap-2 bg-indigo-50 px-3 py-1.5 dark:bg-indigo-950/30">
+          <div className="h-3 w-3 animate-spin rounded-full border-2 border-indigo-400 border-t-transparent" />
+          <span className="text-[11px] text-indigo-700 dark:text-indigo-300">{uploadProgress}</span>
         </div>
       )}
 
       {/* Inline form */}
       {showAddForm && (
-        <div className="px-3 py-3 border-b border-gray-100 bg-gray-50/50 space-y-2 flex-shrink-0">
+        <div className="flex-shrink-0 space-y-2 border-b border-gray-100 bg-gray-50/50 px-3 py-3 dark:border-slate-800 dark:bg-slate-800/40">
           <div className="flex gap-2">
             <input
               value={formTitle}
@@ -491,19 +491,19 @@ export function ManagePanel({ onClose }: { onClose: () => void }) {
                 }
               }}
               placeholder={formCategory === "order_doc" ? t("ui.manage.form.titleOrderPlaceholder") : t("ui.manage.form.titlePlaceholder")}
-              className="flex-1 text-[12px] h-8 border border-gray-200 rounded-md px-3 bg-white focus:ring-1 focus:ring-indigo-300 outline-none"
+              className="h-8 flex-1 rounded-md border border-gray-200 bg-white px-3 text-[12px] text-gray-900 outline-none focus:ring-1 focus:ring-indigo-300 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
             />
             <select
               value={formCategory}
               onChange={e => { setFormCategory(e.target.value); tabCycleRef.current = 0; setFormTitle(""); setFormContent(""); }}
-              className="text-[11px] h-8 border border-gray-200 rounded-md px-2 bg-white text-gray-700 focus:ring-1 focus:ring-indigo-300 outline-none"
+              className="h-8 rounded-md border border-gray-200 bg-white px-2 text-[11px] text-gray-700 outline-none focus:ring-1 focus:ring-indigo-300 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
             >
-              {CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.icon} {c.label}</option>)}
+              {CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
             </select>
           </div>
           {formCategory === "order_doc" ? (
             <div className="space-y-2">
-              <p className="text-[10px] text-gray-400">{t("ui.manage.form.orderHelper")}</p>
+              <p className="text-[10px] text-gray-400 dark:text-slate-500">{t("ui.manage.form.orderHelper")}</p>
               <textarea
                 value={formContent}
                 onChange={e => setFormContent(e.target.value)}
@@ -518,7 +518,7 @@ export function ManagePanel({ onClose }: { onClose: () => void }) {
                 }}
                 placeholder={t("ui.manage.form.orderPlaceholder")}
                 rows={7}
-                className="w-full text-[12px] border border-gray-200 rounded-md px-3 py-2 bg-white resize-none focus:ring-1 focus:ring-indigo-300 outline-none font-mono"
+                className="w-full resize-none rounded-md border border-gray-200 bg-white px-3 py-2 font-mono text-[12px] text-gray-900 outline-none focus:ring-1 focus:ring-indigo-300 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
               />
             </div>
           ) : (
@@ -527,15 +527,15 @@ export function ManagePanel({ onClose }: { onClose: () => void }) {
               onChange={e => setFormContent(e.target.value)}
               placeholder={t("ui.manage.form.contentPlaceholder")}
               rows={5}
-              className="w-full text-[12px] border border-gray-200 rounded-md px-3 py-2 bg-white resize-none focus:ring-1 focus:ring-indigo-300 outline-none"
+              className="w-full resize-none rounded-md border border-gray-200 bg-white px-3 py-2 text-[12px] text-gray-900 outline-none focus:ring-1 focus:ring-indigo-300 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
             />
           )}
           <div className="flex justify-end gap-2">
-            <button onClick={() => setShowAddForm(false)} className="text-[11px] h-7 px-3 rounded-md text-gray-500 hover:bg-gray-100">{t("ui.manage.form.cancel")}</button>
+            <button onClick={() => setShowAddForm(false)} className="h-7 rounded-md px-3 text-[11px] text-gray-500 hover:bg-gray-100 dark:text-slate-400 dark:hover:bg-slate-800">{t("ui.manage.form.cancel")}</button>
             <button
               onClick={handleAddText}
               disabled={!formTitle.trim() || !formContent.trim()}
-              className="text-[11px] h-7 px-3 rounded-md bg-indigo-600 text-white font-medium hover:bg-indigo-700 disabled:opacity-40 transition-colors"
+              className="h-7 rounded-md bg-indigo-600 px-3 text-[11px] font-medium text-white transition-colors hover:bg-indigo-700 disabled:opacity-40"
             >{t("ui.manage.form.save")}</button>
           </div>
         </div>
@@ -547,56 +547,57 @@ export function ManagePanel({ onClose }: { onClose: () => void }) {
           const showOrders = activeCategory === "all" || activeCategory === "order_doc";
           const visibleOrders = showOrders ? orders : [];
           const isEmpty = docs.length === 0 && visibleOrders.length === 0;
-          const sep = locale === "en" ? ", " : "、";
 
           if (isLoading) {
             return (
               <div className="flex items-center justify-center py-12">
-                <div className="w-5 h-5 border-2 border-gray-300 border-t-indigo-500 rounded-full animate-spin" />
+                <div className="h-5 w-5 animate-spin rounded-full border-2 border-gray-300 border-t-indigo-500" />
               </div>
             );
           }
           if (isEmpty) {
             return (
-              <div className="text-center py-10 px-6">
-                <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-3">
-                  <span className="text-xl opacity-50">📄</span>
+              <div className="px-6 py-10 text-center">
+                <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 dark:bg-slate-800">
+                  <svg className="h-5 w-5 text-gray-400 dark:text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+                  </svg>
                 </div>
-                <p className="text-[13px] text-gray-500 font-medium">{t("ui.manage.empty.title")}</p>
-                <p className="text-[11px] text-gray-400 mt-1">{t("ui.manage.empty.hint")}</p>
+                <p className="text-[13px] font-medium text-gray-500 dark:text-slate-400">{t("ui.manage.empty.title")}</p>
+                <p className="mt-1 text-[11px] text-gray-400 dark:text-slate-500">{t("ui.manage.empty.hint")}</p>
               </div>
             );
           }
           return (
-            <div className="divide-y divide-gray-50">
+            <div className="divide-y divide-gray-50 dark:divide-slate-800/60">
               {/* Real orders */}
               {visibleOrders.map(order => {
-                const itemNames = order.items.map(i => i.name).join(sep);
+                const itemNames = order.items.map(i => i.name).join(", ");
                 const sLabel = statusLabelOf(order.status);
-                const sColor = STATUS_COLORS[order.status] || "bg-gray-100 text-gray-500";
+                const sColor = STATUS_COLORS[order.status] || "bg-gray-100 text-gray-500 dark:bg-slate-800 dark:text-slate-400";
                 return (
-                  <div key={`order-${order.orderId}`} className="group px-3 py-3 hover:bg-gray-50/50 transition-colors">
+                  <div key={`order-${order.orderId}`} className="group px-3 py-3 transition-colors hover:bg-gray-50/50 dark:hover:bg-slate-800/40">
                     <div className="flex items-start gap-2.5">
-                      <div className="w-7 h-7 rounded-md bg-purple-50 flex items-center justify-center text-sm flex-shrink-0 mt-0.5">
-                        🧾
+                      <div className="mt-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md bg-purple-50 dark:bg-purple-950/40">
+                        <DocIcon category="order_doc" isOrder />
                       </div>
-                      <div className="flex-1 min-w-0">
+                      <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
-                          <span className="text-[12px] font-medium text-gray-900 truncate">{order.orderId}</span>
-                          <span className={`text-[10px] px-1.5 py-0.5 rounded flex-shrink-0 ${sColor}`}>
+                          <span className="truncate text-[12px] font-medium text-gray-900 dark:text-slate-100">{order.orderId}</span>
+                          <span className={`flex-shrink-0 rounded px-1.5 py-0.5 text-[10px] ${sColor}`}>
                             {sLabel}
                           </span>
-                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-50 text-purple-500 flex-shrink-0">{orderTagLabel}</span>
+                          <span className="flex-shrink-0 rounded bg-purple-50 px-1.5 py-0.5 text-[10px] text-purple-500 dark:bg-purple-950/40 dark:text-purple-300">{orderTagLabel}</span>
                         </div>
-                        <p className="text-[11px] text-gray-400 mt-0.5 line-clamp-1">{itemNames}</p>
-                        <div className="flex items-center gap-1.5 mt-1.5">
+                        <p className="mt-0.5 line-clamp-1 text-[11px] text-gray-400 dark:text-slate-500">{itemNames}</p>
+                        <div className="mt-1.5 flex items-center gap-1.5">
                           {order.carrier && (
-                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-600">{order.carrier}</span>
+                            <span className="rounded bg-indigo-50 px-1.5 py-0.5 text-[10px] text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-300">{order.carrier}</span>
                           )}
                           {order.trackingNumber && (
-                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-50 text-gray-500 font-mono">{order.trackingNumber}</span>
+                            <span className="rounded bg-gray-50 px-1.5 py-0.5 font-mono text-[10px] text-gray-500 dark:bg-slate-800 dark:text-slate-400">{order.trackingNumber}</span>
                           )}
-                          <span className="text-[10px] text-gray-300 ml-auto">¥{order.totalAmount}</span>
+                          <span className="ml-auto text-[10px] text-gray-300 dark:text-slate-500">{order.totalAmount}</span>
                         </div>
                       </div>
                     </div>
@@ -614,64 +615,64 @@ export function ManagePanel({ onClose }: { onClose: () => void }) {
                 const sColor = detectedStatus ? STATUS_COLORS[detectedStatus] : null;
                 const description = isOrderDoc && doc.itemNames ? doc.itemNames : doc.summary;
                 return (
-                <div key={doc.docId} className="group px-3 py-3 hover:bg-gray-50/50 transition-colors">
+                <div key={doc.docId} className="group px-3 py-3 transition-colors hover:bg-gray-50/50 dark:hover:bg-slate-800/40">
                   <div className="flex items-start gap-2.5">
-                    <div className={`w-7 h-7 rounded-md flex items-center justify-center text-sm flex-shrink-0 mt-0.5 ${isOrderDoc ? "bg-purple-50" : "bg-gray-100"}`}>
-                      {isOrderDoc ? "🧾" : (catMeta(doc.category)?.icon || "📄")}
+                    <div className={`mt-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md ${isOrderDoc ? "bg-purple-50 dark:bg-purple-950/40" : "bg-gray-100 dark:bg-slate-800"}`}>
+                      <DocIcon category={doc.category} isOrder={isOrderDoc} />
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-[12px] font-medium text-gray-900 truncate">{doc.filename}</span>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="truncate text-[12px] font-medium text-gray-900 dark:text-slate-100">{doc.filename}</span>
                         {sLabel && sColor && (
-                          <span className={`text-[10px] px-1.5 py-0.5 rounded flex-shrink-0 ${sColor}`}>
+                          <span className={`flex-shrink-0 rounded px-1.5 py-0.5 text-[10px] ${sColor}`}>
                             {sLabel}
                           </span>
                         )}
-                        <span className={`text-[10px] px-1.5 py-0.5 rounded flex-shrink-0 ${isOrderDoc ? "bg-purple-50 text-purple-500" : "bg-gray-100 text-gray-500"}`}>
+                        <span className={`flex-shrink-0 rounded px-1.5 py-0.5 text-[10px] ${isOrderDoc ? "bg-purple-50 text-purple-500 dark:bg-purple-950/40 dark:text-purple-300" : "bg-gray-100 text-gray-500 dark:bg-slate-800 dark:text-slate-400"}`}>
                           {catMeta(doc.category)?.label}
                         </span>
                       </div>
-                      <p className="text-[11px] text-gray-400 mt-0.5 line-clamp-1">{description}</p>
-                      <div className="flex items-center gap-1.5 mt-1.5">
+                      <p className="mt-0.5 line-clamp-1 text-[11px] text-gray-400 dark:text-slate-500">{description}</p>
+                      <div className="mt-1.5 flex items-center gap-1.5">
                         {isOrderDoc ? (
                           <>
                             {doc.carrier && (
-                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-600">{doc.carrier}</span>
+                              <span className="rounded bg-indigo-50 px-1.5 py-0.5 text-[10px] text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-300">{doc.carrier}</span>
                             )}
                             {doc.trackingNumber && (
-                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-50 text-gray-500 font-mono">{doc.trackingNumber}</span>
+                              <span className="rounded bg-gray-50 px-1.5 py-0.5 font-mono text-[10px] text-gray-500 dark:bg-slate-800 dark:text-slate-400">{doc.trackingNumber}</span>
                             )}
                             {doc.totalAmount !== undefined ? (
-                              <span className="text-[10px] text-gray-400 ml-auto">¥{doc.totalAmount}</span>
+                              <span className="ml-auto text-[10px] text-gray-400 dark:text-slate-500">{doc.totalAmount}</span>
                             ) : (
-                              <span className="text-[10px] text-gray-300 ml-auto">{t("ui.manage.unitChars", { n: doc.charCount })}</span>
+                              <span className="ml-auto text-[10px] text-gray-300 dark:text-slate-500">{t("ui.manage.unitChars", { n: doc.charCount })}</span>
                             )}
                           </>
                         ) : (
                           <>
                             {doc.keywords?.slice(0, 3).map(kw => (
-                              <span key={kw} className="text-[10px] px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-600">{kw}</span>
+                              <span key={kw} className="rounded bg-indigo-50 px-1.5 py-0.5 text-[10px] text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-300">{kw}</span>
                             ))}
-                            <span className="text-[10px] text-gray-300 ml-auto">{t("ui.manage.unitChars", { n: doc.charCount })}</span>
+                            <span className="ml-auto text-[10px] text-gray-300 dark:text-slate-500">{t("ui.manage.unitChars", { n: doc.charCount })}</span>
                           </>
                         )}
                       </div>
                     </div>
                     <button
                       onClick={() => handleViewDoc(doc.docId, doc.category, doc.filename)}
-                      className="opacity-0 group-hover:opacity-100 w-6 h-6 flex items-center justify-center rounded text-gray-400 hover:text-indigo-500 hover:bg-indigo-50 transition-all flex-shrink-0"
+                      className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded text-gray-400 opacity-0 transition-all hover:bg-indigo-50 hover:text-indigo-500 group-hover:opacity-100 dark:hover:bg-indigo-950/50"
                       title={t("ui.manage.viewDoc")}
                     >
-                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                       </svg>
                     </button>
                     <button
                       onClick={() => handleDelete(doc.docId, doc.category)}
-                      className="opacity-0 group-hover:opacity-100 w-6 h-6 flex items-center justify-center rounded text-gray-400 hover:text-red-500 hover:bg-red-50 transition-all flex-shrink-0"
+                      className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded text-gray-400 opacity-0 transition-all hover:bg-red-50 hover:text-red-500 group-hover:opacity-100 dark:hover:bg-red-950/40"
                     >
-                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                       </svg>
                     </button>
@@ -686,16 +687,16 @@ export function ManagePanel({ onClose }: { onClose: () => void }) {
 
       {/* Document Content Viewer */}
       {viewingDoc && (
-        <div className="absolute inset-0 bg-white z-10 flex flex-col">
-          <div className="h-12 flex items-center justify-between px-4 border-b border-gray-100 flex-shrink-0">
-            <div className="flex items-center gap-2 min-w-0">
-              <button onClick={() => setViewingDoc(null)} className="w-6 h-6 flex items-center justify-center rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors">
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div className="absolute inset-0 z-10 flex flex-col bg-white dark:bg-slate-900">
+          <div className="flex h-12 flex-shrink-0 items-center justify-between border-b border-gray-100 px-4 dark:border-slate-800">
+            <div className="flex min-w-0 items-center gap-2">
+              <button onClick={() => setViewingDoc(null)} className="flex h-6 w-6 items-center justify-center rounded-md text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200">
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
               </button>
-              <span className="text-[12px] font-medium text-gray-800 truncate">{viewingDoc.filename}</span>
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-500 flex-shrink-0">
+              <span className="truncate text-[12px] font-medium text-gray-800 dark:text-slate-100">{viewingDoc.filename}</span>
+              <span className="flex-shrink-0 rounded bg-gray-100 px-1.5 py-0.5 text-[10px] text-gray-500 dark:bg-slate-800 dark:text-slate-400">
                 {catMeta(viewingDoc.category)?.label}
               </span>
             </div>
@@ -703,10 +704,10 @@ export function ManagePanel({ onClose }: { onClose: () => void }) {
           <div className="flex-1 overflow-y-auto p-4">
             {loadingContent ? (
               <div className="flex items-center justify-center py-12">
-                <div className="w-5 h-5 border-2 border-gray-300 border-t-indigo-500 rounded-full animate-spin" />
+                <div className="h-5 w-5 animate-spin rounded-full border-2 border-gray-300 border-t-indigo-500" />
               </div>
             ) : (
-              <pre className="text-[12px] text-gray-700 whitespace-pre-wrap leading-relaxed font-sans">{viewingDoc.content}</pre>
+              <pre className="whitespace-pre-wrap font-sans text-[12px] leading-relaxed text-gray-700 dark:text-slate-300">{viewingDoc.content}</pre>
             )}
           </div>
         </div>

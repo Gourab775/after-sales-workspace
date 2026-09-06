@@ -10,7 +10,7 @@ Professional after-sales customer service workspace with automated intent routin
 
 ## Overview
 
-After-Sales Service Workspace is a full-stack support operations platform for handling customer inquiries at scale. It provides automated intent recognition, contextual knowledge routing, and structured workflows for order lookup, refunds, and exchanges. Designed with a bilingual interface and persistent session state, it delivers consistent service experiences across follow-up interactions.
+After-Sales Service Workspace is a full-stack support operations platform for handling customer inquiries at scale. It provides automated intent recognition, contextual knowledge routing, and structured workflows for order lookup, refunds, and exchanges. Designed with an English-only interface, dark-mode support, and persistent session state, it delivers consistent service experiences across follow-up interactions.
 
 ## Features
 
@@ -28,6 +28,7 @@ After-Sales Service Workspace is a full-stack support operations platform for ha
 | Frontend | React 19, TypeScript, Tailwind CSS, tailwind-merge, clsx |
 | Workflow Engine | State Workflow (session-based routing, persisted state) |
 | Integrations | Platform Services via Open-Compatible gateway |
+| Storage | Neon Postgres (`documents`, `orders`, `conversation_states`, `messages`) |
 | Document Handling | jszip, mammoth, marked, unpdf, xlsx, zod |
 | Styling | PostCSS, Autoprefixer, Tailwind Typography |
 
@@ -47,7 +48,7 @@ after-sales-assistant/
 │   │   ├── nodes.ts          # Intent handler nodes
 │   │   └── edges.ts          # Conditional routing
 │   ├── _data/                # Demo knowledge base and seed data
-│   ├── _i18n.ts              # Internationalization (English / Chinese)
+│   ├── _i18n.ts              # Internationalization (English-only)
 │   └── _shared.ts            # Service initialization, SSE helpers, logger
 ├── cloud-functions/
 │   └── health/               # GET /health — liveness probe
@@ -91,6 +92,7 @@ Open http://localhost:3000 for the workspace UI.
 | `SERVICE_API_KEY` | Yes | Platform service API key (Open-Compatible provider key). |
 | `SERVICE_BASE_URL` | Yes | Gateway base URL, e.g. `https://gateway.edgeone.link/v1` for Makers Models. |
 | `SERVICE_MODEL` | No | Model identifier. Defaults to `@makers/deepseek-v4-flash`. |
+| `DATABASE_URL` | Yes | Neon Postgres pooled connection string (database `after_sales`). Tables are created automatically on first request. |
 
 > Alias: `SERVICE_*` is the canonical naming in this workspace. `SERVICE_API_KEY`, `SERVICE_BASE_URL`, and `SERVICE_MODEL` are aliases for `AI_GATEWAY_API_KEY`, `AI_GATEWAY_BASE_URL`, and `AI_GATEWAY_MODEL` for backward compatibility. Either naming works; prefer `SERVICE_*` for new deployments.
 
@@ -130,8 +132,15 @@ This project uses `edgeone.json` for EdgeOne Makers deployment:
 
 - **Knowledge Base:** Use `/manage` and `/upload` endpoints or edit files under `services/_data/` to add FAQ entries and product documents.
 - **Workflow Logic:** Adjust intent categories and routing in `services/_graph/nodes.ts` and `services/_graph/edges.ts`.
-- **UI / Theme:** Modify `app/page.tsx`, `app/components/`, `app/globals.css`, and `tailwind.config.ts`.
-- **Internationalization:** Update `services/_i18n.ts` to add locales or adjust service responses.
+- **UI / Theme:** Modify `app/page.tsx`, `app/components/`, `app/globals.css`, and `tailwind.config.ts`. Theme is light/dark via a `dark` class on `<html>` (see `lib/theme.tsx`).
+- **Language:** The UI and all service responses are English-only (`lib/i18n.tsx`, `services/_i18n.ts`).
+
+### Neon database setup
+
+1. Create a project at https://console.neon.tech (region closest to your users).
+2. Create a database named `after_sales`.
+3. Copy the pooled connection string and set it as `DATABASE_URL` in `.env` / Vercel Environment Variables.
+4. Tables (`documents`, `orders`, `conversation_states`, `messages`) are created automatically on the first API request — no manual migration needed.
 
 ## License
 

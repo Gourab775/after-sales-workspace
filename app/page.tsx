@@ -3,17 +3,20 @@
 import { useState, useEffect } from "react";
 import { ChatPanel } from "./components/chat-panel";
 import { ManagePanel } from "./components/manage-panel";
-import { DeployButtons } from "./components/deploy-buttons";
+import { ThemeToggle } from "./components/theme-toggle";
 import { useT } from "../lib/i18n";
+
+const GITHUB_URL = "https://github.com/Gourab775/after-sales-workspace";
 
 interface HealthStatus {
   ok: boolean;
   hasAiGateway: boolean;
+  hasDatabase?: boolean;
   missing: string[];
 }
 
 export default function Home() {
-  const { t, locale, setLocale } = useT();
+  const { t } = useT();
   const [showManage, setShowManage] = useState(false);
   const [showResetModal, setShowResetModal] = useState(false);
   const [resetVersion, setResetVersion] = useState(0);
@@ -67,72 +70,80 @@ export default function Home() {
   };
 
   return (
-    <main className="h-screen flex flex-col bg-[#f7f8fa]">
+    <main className="flex h-screen flex-col bg-[#f7f8fa] dark:bg-slate-950">
       {/* Env config warning banner */}
       {showWarning && (
-        <div className="flex-shrink-0 bg-amber-50 border-b border-amber-200 px-4 py-2 flex items-center gap-2.5">
-          <span className="text-amber-500 text-sm flex-shrink-0">⚠️</span>
-          <div className="flex-1 min-w-0">
-            <span className="text-[12px] text-amber-800 font-medium">{t("ui.warn.envMissing")}</span>
+        <div className="flex flex-shrink-0 items-center gap-2.5 border-b border-amber-200 bg-amber-50 px-4 py-2 dark:border-amber-900/50 dark:bg-amber-950/40">
+          <svg className="h-4 w-4 flex-shrink-0 text-amber-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v3.75m0 3.75h.008M10.29 3.86 2.82 17.1A1.9 1.9 0 0 0 4.47 20h15.06a1.9 1.9 0 0 0 1.65-2.9L13.71 3.86a1.96 1.96 0 0 0-3.42 0Z" />
+          </svg>
+          <div className="min-w-0 flex-1">
+            <span className="text-[12px] font-medium text-amber-800 dark:text-amber-200">{t("ui.warn.envMissing")}</span>
             {!health.hasAiGateway && (health.missing?.length ?? 0) > 0 && (
-              <span className="text-[11px] text-amber-600 ml-1.5">
-                {t("ui.warn.missing", { names: (health.missing ?? []).join(locale === "en" ? ", " : "、") })}
+              <span className="ml-1.5 text-[11px] text-amber-600 dark:text-amber-400">
+                {t("ui.warn.missing", { names: (health.missing ?? []).join(", ") })}
               </span>
             )}
           </div>
           <button
             onClick={() => setHealth(h => h ? { ...h, ok: true } : h)}
-            className="flex-shrink-0 text-amber-400 hover:text-amber-600 text-sm leading-none"
-          >✕</button>
+            className="flex-shrink-0 text-sm leading-none text-amber-400 hover:text-amber-600 dark:hover:text-amber-300"
+            aria-label="Dismiss"
+          >
+            <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="m6 6 12 12M18 6 6 18" />
+            </svg>
+          </button>
         </div>
       )}
 
       {/* Header */}
-      <header className="flex-shrink-0 h-14 bg-white border-b border-gray-200/80 px-4 flex items-center justify-between shadow-sm">
+      <header className="flex h-14 flex-shrink-0 items-center justify-between border-b border-gray-200/80 bg-white/90 px-4 shadow-sm backdrop-blur dark:border-slate-800 dark:bg-slate-900/90">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-xs font-bold shadow-sm">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 text-xs font-bold text-white shadow-sm">
             AI
           </div>
           <div>
-            <h1 className="text-[15px] font-semibold text-gray-900 leading-tight">{t("ui.header.title")}</h1>
-            <p className="text-[11px] text-gray-400 leading-tight">{t("ui.header.subtitle")}</p>
+            <h1 className="text-[15px] font-semibold leading-tight text-gray-900 dark:text-slate-100">{t("ui.header.title")}</h1>
+            <p className="text-[11px] leading-tight text-gray-400 dark:text-slate-500">{t("ui.header.subtitle")}</p>
           </div>
         </div>
-        <div className="flex items-center gap-3">
-          <DeployButtons
-            templateSlug="after-sales-assistant"
-            githubUrl="https://github.com/edgeone-pages-test/after-sales-assistant"
-            lang={locale}
-          />
+        <div className="flex items-center gap-2">
+          <a
+            href={GITHUB_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            title="GitHub repository"
+            aria-label="GitHub repository"
+            className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-800 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100"
+          >
+            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path d="M12 .5C5.73.5.5 5.74.5 12.02c0 5.1 3.29 9.42 7.86 10.96.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.53-1.34-1.3-1.7-1.3-1.7-1.06-.72.08-.71.08-.71 1.17.08 1.78 1.2 1.78 1.2 1.04 1.78 2.73 1.27 3.4.97.1-.75.41-1.27.74-1.56-2.56-.29-5.26-1.28-5.26-5.7 0-1.26.45-2.29 1.19-3.1-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.18 1.18a11.1 11.1 0 0 1 5.8 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.84 1.19 3.1 0 4.43-2.7 5.41-5.27 5.69.42.36.8 1.08.8 2.18v3.23c0 .31.21.67.8.56A11.53 11.53 0 0 0 23.5 12.02C23.5 5.74 18.27.5 12 .5z" />
+            </svg>
+          </a>
+          <ThemeToggle />
           <button
             onClick={() => setShowResetModal(true)}
             disabled={isResetting}
-            className="text-[11px] px-2.5 py-1 rounded-md border border-red-200 text-red-600 font-medium hover:bg-red-50 transition-colors disabled:opacity-50"
+            className="rounded-md border border-red-200 px-2.5 py-1 text-[11px] font-medium text-red-600 transition-colors hover:bg-red-50 disabled:opacity-50 dark:border-red-900/60 dark:text-red-400 dark:hover:bg-red-950/40"
             title={t("ui.header.resetConfirm")}
           >
             {isResetting ? t("ui.header.resetting") : t("ui.header.reset")}
           </button>
           <button
-            onClick={() => setLocale(locale === "en" ? "zh" : "en")}
-            className="text-[11px] px-2.5 py-1 rounded-md border border-gray-200 text-gray-600 font-medium hover:bg-gray-50 transition-colors"
-            title={locale === "en" ? "切换到中文" : "Switch to English"}
-          >
-            {t("ui.header.langSwitch")}
-          </button>
-          <button
             onClick={() => setShowManage(!showManage)}
-            className={`text-xs px-3.5 py-1.5 rounded-lg font-medium transition-all ${
+            className={`rounded-lg px-3.5 py-1.5 text-xs font-medium transition-all ${
               showManage
-                ? "bg-indigo-50 text-indigo-600 ring-1 ring-indigo-200"
-                : "text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+                ? "bg-indigo-50 text-indigo-600 ring-1 ring-indigo-200 dark:bg-indigo-950/60 dark:text-indigo-300 dark:ring-indigo-800"
+                : "text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200"
             }`}
           >
-            <span className="mr-1">📚</span> {t("ui.header.kb")}
+            {t("ui.header.kb")}
           </button>
-          <span className="flex items-center gap-1.5 text-[11px] text-gray-400">
+          <span className="hidden items-center gap-1.5 text-[11px] text-gray-400 sm:flex dark:text-slate-500">
             <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500" />
             </span>
             {t("ui.header.online")}
           </span>
@@ -140,13 +151,13 @@ export default function Home() {
       </header>
 
       {/* Body */}
-      <div className="flex-1 flex overflow-hidden">
-        <div className="flex-1 min-w-0">
+      <div className="flex flex-1 overflow-hidden">
+        <div className="min-w-0 flex-1">
           <ChatPanel key={resetVersion} />
         </div>
 
         {showManage && (
-          <aside className="w-[380px] flex-shrink-0 border-l border-gray-200/80 bg-white shadow-[-4px_0_12px_rgba(0,0,0,0.03)]">
+          <aside className="w-[380px] max-w-[90vw] flex-shrink-0 border-l border-gray-200/80 bg-white shadow-[-4px_0_12px_rgba(0,0,0,0.03)] dark:border-slate-800 dark:bg-slate-900">
             <ManagePanel onClose={() => setShowManage(false)} />
           </aside>
         )}
@@ -162,22 +173,22 @@ export default function Home() {
             aria-modal="true"
             aria-labelledby="reset-modal-title"
             aria-describedby="reset-modal-description"
-            className="w-full max-w-md overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl"
+            className="w-full max-w-md overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900"
             onClick={event => event.stopPropagation()}
           >
             <div className="h-1.5 bg-gradient-to-r from-red-500 via-rose-500 to-orange-400" />
             <div className="p-6">
               <div className="flex items-start gap-4">
-                <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-600 ring-1 ring-red-100">
+                <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-600 ring-1 ring-red-100 dark:bg-red-950/50 dark:text-red-400 dark:ring-red-900/50">
                   <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v3.75m0 3.75h.008M10.29 3.86 2.82 17.1A1.9 1.9 0 0 0 4.47 20h15.06a1.9 1.9 0 0 0 1.65-2.9L13.71 3.86a1.96 1.96 0 0 0-3.42 0Z" />
                   </svg>
                 </div>
                 <div className="min-w-0 flex-1">
-                  <h2 id="reset-modal-title" className="text-base font-semibold text-gray-900">
+                  <h2 id="reset-modal-title" className="text-base font-semibold text-gray-900 dark:text-slate-100">
                     {t("ui.header.reset")}
                   </h2>
-                  <p id="reset-modal-description" className="mt-2 text-sm leading-relaxed text-gray-500">
+                  <p id="reset-modal-description" className="mt-2 text-sm leading-relaxed text-gray-500 dark:text-slate-400">
                     {t("ui.header.resetConfirm")}
                   </p>
                 </div>
@@ -185,7 +196,7 @@ export default function Home() {
                   type="button"
                   aria-label={t("ui.manage.form.cancel")}
                   onClick={() => setShowResetModal(false)}
-                  className="-mr-1 -mt-1 rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+                  className="-mr-1 -mt-1 rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-slate-800 dark:hover:text-slate-300"
                 >
                   <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="m6 6 12 12M18 6 6 18" />
@@ -197,7 +208,7 @@ export default function Home() {
                 <button
                   type="button"
                   onClick={() => setShowResetModal(false)}
-                  className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50"
+                  className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
                 >
                   {t("ui.manage.form.cancel")}
                 </button>

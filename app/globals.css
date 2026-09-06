@@ -9,10 +9,12 @@ body {
 }
 
 /* Custom scrollbar — minimal */
-::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 10px; }
 ::-webkit-scrollbar-thumb:hover { background: #d1d5db; }
+.dark ::-webkit-scrollbar-thumb { background: #334155; }
+.dark ::-webkit-scrollbar-thumb:hover { background: #475569; }
 
 /* Chat markdown */
 .prose-chat p { margin: 0.4em 0; }
@@ -21,6 +23,7 @@ body {
 .prose-chat ul, .prose-chat ol { margin: 0.4em 0; padding-left: 1.3em; }
 .prose-chat li { margin: 0.15em 0; }
 .prose-chat strong { color: #1f2937; font-weight: 600; }
+.dark .prose-chat strong { color: #f1f5f9; }
 .prose-chat code {
   background: #f3f4f6;
   padding: 0.15em 0.4em;
@@ -28,6 +31,7 @@ body {
   font-size: 0.85em;
   color: #6366f1;
 }
+.dark .prose-chat code { background: #1e293b; color: #a5b4fc; }
 .prose-chat pre {
   background: #1f2937;
   padding: 0.75em 1em;
@@ -45,4 +49,9 @@ body {
 @keyframes bounce {
   0%, 80%, 100% { transform: translateY(0); }
   40% { transform: translateY(-4px); }
+}
+
+/* Smooth theme transition (backgrounds only, avoids animating everything) */
+body, header, aside, form {
+  transition: background-color 0.2s ease, border-color 0.2s ease;
 }

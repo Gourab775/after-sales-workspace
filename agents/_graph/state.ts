@@ -8,8 +8,8 @@ import type { Locale } from "../_i18n";
 export const AfterSalesState = Annotation.Root({
   userInput: Annotation<string>({ reducer: (_, n) => n, default: () => "" }),
 
-  // User locale (for i18n response generation)
-  locale: Annotation<Locale>({ reducer: (_, n) => n, default: () => "zh" }),
+  // User locale (English-only)
+  locale: Annotation<Locale>({ reducer: (_, n) => n, default: () => "en" }),
 
   // Intent classification
   intent: Annotation<"faq" | "lookup_order" | "refund" | "exchange" | "general" | null>({

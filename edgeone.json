@@ -12,7 +12,8 @@
     "externalNodeModules": [
       "@langchain/openai",
       "@langchain/core",
-      "@langchain/langgraph"
+      "@langchain/langgraph",
+      "@neondatabase/serverless"
     ]
   },
   "agents": {
@@ -20,7 +21,8 @@
     "externalNodeModules": [
       "@langchain/openai",
       "@langchain/core",
-      "@langchain/langgraph"
+      "@langchain/langgraph",
+      "@neondatabase/serverless"
     ]
   }
 }

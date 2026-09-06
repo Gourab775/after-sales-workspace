@@ -80,8 +80,9 @@ export function getSupportedExtensions(): string[] {
 async function parsePDF(buffer: Buffer): Promise<string> {
   try {
     const { extractText, getDocumentProxy } = await import("unpdf");
-    // unpdf 期望 Uint8Array；Buffer 是其子类，但显式拷一份避免下游对底层 ArrayBuffer
-    // 的偏移/长度断言失败（SCF 容器里见过 Buffer.subarray 的偏移把 PDF.js 搞挂）。
+    // unpdf expects a Uint8Array. Buffer is a subclass, but copy explicitly to
+    // avoid downstream offset/length assertions on the underlying ArrayBuffer
+    // (seen in serverless containers where a Buffer.subarray offset broke PDF.js).
     const pdf = await getDocumentProxy(new Uint8Array(buffer));
     const { text } = await extractText(pdf, { mergePages: true });
     return Array.isArray(text) ? text.join("\n") : text || "";

@@ -218,7 +218,7 @@ export async function onRequest(context: any) {
 
 // ─── Smart Suggestions (locale-aware) ───
 
-function generateSuggestions(state: Partial<AfterSalesStateType>, locale: Locale): Array<{ id: string; emoji: string; title: string; action?: string }> {
+function generateSuggestions(state: Partial<AfterSalesStateType>, locale: Locale): Array<{ id: string; title: string; action?: string }> {
   const intent = state.intent;
   const order = state.currentOrder;
   const orderId = state.orderId;
@@ -227,51 +227,51 @@ function generateSuggestions(state: Partial<AfterSalesStateType>, locale: Locale
     if (order && orderId) {
       if (order.status === "delivered") {
         return [
-          { id: "refund", emoji: "💰", title: t(locale, "sug.refund"), action: t(locale, "sug.refundActionTpl", { orderId }) },
-          { id: "exchange", emoji: "🔄", title: t(locale, "sug.exchange"), action: t(locale, "sug.exchangeActionTpl", { orderId }) },
+          { id: "refund", title: t(locale, "sug.refund"), action: t(locale, "sug.refundActionTpl", { orderId }) },
+          { id: "exchange", title: t(locale, "sug.exchange"), action: t(locale, "sug.exchangeActionTpl", { orderId }) },
         ];
       }
       if (order.status === "shipped") {
         return [
-          { id: "refund", emoji: "💰", title: t(locale, "sug.refund"), action: t(locale, "sug.refundActionTpl", { orderId }) },
-          { id: "delivery", emoji: "🚚", title: t(locale, "sug.delivery"), action: t(locale, "sug.deliveryActionTpl", { orderId }) },
+          { id: "refund", title: t(locale, "sug.refund"), action: t(locale, "sug.refundActionTpl", { orderId }) },
+          { id: "delivery", title: t(locale, "sug.delivery"), action: t(locale, "sug.deliveryActionTpl", { orderId }) },
         ];
       }
       if (order.status === "pending") {
         return [
-          { id: "eta", emoji: "📦", title: t(locale, "sug.eta"), action: t(locale, "sug.etaActionTpl", { orderId }) },
-          { id: "cancel", emoji: "❌", title: t(locale, "sug.cancel"), action: t(locale, "sug.cancelActionTpl", { orderId }) },
+          { id: "eta", title: t(locale, "sug.eta"), action: t(locale, "sug.etaActionTpl", { orderId }) },
+          { id: "cancel", title: t(locale, "sug.cancel"), action: t(locale, "sug.cancelActionTpl", { orderId }) },
         ];
       }
       return [
-        { id: "status", emoji: "🔔", title: t(locale, "sug.status"), action: t(locale, "sug.statusActionTpl", { orderId }) },
-        { id: "other", emoji: "🔍", title: t(locale, "sug.lookupOther") },
+        { id: "status", title: t(locale, "sug.status"), action: t(locale, "sug.statusActionTpl", { orderId }) },
+        { id: "other", title: t(locale, "sug.lookupOther") },
       ];
     }
     return [
-      { id: "faq", emoji: "📋", title: t(locale, "sug.faqGeneral") },
-      { id: "refund", emoji: "💰", title: t(locale, "sug.refundApply") },
+      { id: "faq", title: t(locale, "sug.faqGeneral") },
+      { id: "refund", title: t(locale, "sug.refundApply") },
     ];
   }
 
   if (intent === "refund") {
     return [
-      { id: "timeline", emoji: "⏰", title: t(locale, "sug.timelineRefund") },
-      { id: "other", emoji: "🔍", title: t(locale, "sug.lookupOther") },
+      { id: "timeline", title: t(locale, "sug.timelineRefund") },
+      { id: "other", title: t(locale, "sug.lookupOther") },
     ];
   }
 
   if (intent === "exchange") {
     return [
-      { id: "address", emoji: "📮", title: t(locale, "sug.address") },
-      { id: "timeline", emoji: "⏰", title: t(locale, "sug.timelineExchange") },
+      { id: "address", title: t(locale, "sug.address") },
+      { id: "timeline", title: t(locale, "sug.timelineExchange") },
     ];
   }
 
   if (intent === "faq") {
     return [
-      { id: "order", emoji: "🔍", title: t(locale, "sug.lookupMyOrders") },
-      { id: "refund", emoji: "💰", title: t(locale, "sug.refundApply") },
+      { id: "order", title: t(locale, "sug.lookupMyOrders") },
+      { id: "refund", title: t(locale, "sug.refundApply") },
     ];
   }
 

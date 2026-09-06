@@ -1,112 +1,27 @@
 /**
- * Backend i18n module — translation tables shared by agents and cloud-functions.
+ * Backend i18n module — English-only strings shared by agents and cloud-functions.
  *
  * Usage:
- *   import { t, getLocale, languageDirective, STATUS_LABELS } from "../_i18n";
+ *   import { t, getLocale, languageDirective } from "../_i18n";
  *   const msg = t(locale, "ai.refundSubmitted", { orderId });
  *
- * The frontend (lib/i18n.tsx) maintains a parallel translation table with the
+ * The frontend (lib/i18n.tsx) maintains a parallel table with the
  * same keys for client-side rendering.
  */
 
-export type Locale = "zh" | "en";
+export type Locale = "en";
 
-export function getLocale(body: any): Locale {
-  return body?.locale === "en" ? "en" : "zh";
+/** English-only: always returns "en" regardless of request body. */
+export function getLocale(_body?: any): Locale {
+  return "en";
 }
 
-/** Append to LLM system prompts to force response language. */
-export function languageDirective(locale: Locale): string {
-  return locale === "en"
-    ? "\n\nIMPORTANT: Respond entirely in English. Even if the source documents are in Chinese, translate your answer to English."
-    : "\n\n请全部用中文回答。";
+/** Appended to LLM system prompts to force English responses. */
+export function languageDirective(_locale?: Locale): string {
+  return "\n\nIMPORTANT: Respond entirely in English.";
 }
 
-// ─── Translation tables ───
-
-const ZH: Record<string, string> = {
-  // Status labels
-  "status.pending": "待发货",
-  "status.shipped": "运输中",
-  "status.delivered": "已签收",
-  "status.refund_requested": "退款申请中",
-  "status.refund_approved": "退款已批准",
-  "status.refund_completed": "退款已完成",
-  "status.exchange_requested": "换货申请中",
-  "status.exchange_shipped": "换货已寄出",
-  "status.unknown": "状态未知",
-
-  // Workflow steps (chat agent SSE labels)
-  "step.intent_recognition": "正在理解您的问题...",
-  "step.faq_search": "正在查找相关政策...",
-  "step.lookup_order": "正在查询订单...",
-  "step.request_refund": "正在处理退款申请...",
-  "step.request_exchange": "正在处理换货申请...",
-  "step.general_chat": "正在思考...",
-
-  // AI static response templates
-  "ai.kbEmpty": "抱歉，知识库中暂无相关文档。您可以换个方式描述问题，或者直接告诉我您的订单号，我来帮您处理。",
-  "ai.faqNotFound": "抱歉，我没有找到与您问题相关的文档信息。您可以换个方式描述问题，或者直接告诉我您的订单号，我来帮您处理。",
-  "ai.noOrders": "暂无订单记录。如需帮助，请提供订单号，或先在知识库导入 Demo 数据。",
-  "ai.orderListPrompt": "您有以下订单，请告诉我要查询哪一个：\n\n{lines}",
-  "ai.orderFound": "已找到您的订单 {orderId}，当前状态：**{statusLabel}**。{tracking}",
-  "ai.trackingLine": "\n快递：{carrier} {trackingNumber}",
-  "ai.orderNotFound": "抱歉，没有找到订单 {orderId}。请确认订单号是否正确，或先通过知识库导入 Demo 数据。",
-  "ai.orderFoundFromBlob": "已找到订单 **{orderId}** 的信息：\n\n{content}",
-  "ai.refundNoOrders": "暂无订单记录，无法申请退款。请先导入 Demo 数据或提供订单号。",
-  "ai.refundOrderListPrompt": "请选择需要退款的订单（运输中或已签收的订单支持退款申请）：\n\n{lines}\n\n请回复订单号即可。",
-  "ai.refundDuplicate": "订单 {orderId} 已有退款记录，无需重复申请。\n\n订单详情：\n{content}",
-  "ai.refundDuplicateShort": "订单 {orderId} 已有退款记录（当前状态：{statusLabel}），无需重复申请。",
-  "ai.refundIneligible": "订单 {orderId} 当前状态为「{statusLabel}」，暂不支持退款。已签收或运输中的订单方可申请退款。",
-  "ai.refundIneligibleWithDetail": "订单 {orderId} 当前状态为「{statusLabel}」，暂不支持退款。已签收或运输中的订单方可申请退款。\n\n订单详情：\n{content}",
-  "ai.refundSubmittedSimple": "退款申请已提交！\n\n- 订单：{orderId}\n- 预计 3-5 个工作日退回原支付方式\n\n如为质量问题，我们将提供免费取件服务。",
-  "ai.refundSubmitted": "退款申请已提交！\n\n- 订单：{orderId}\n- 退款金额：¥{amount}\n- 预计 3-5 个工作日退回原支付方式\n\n如为质量问题，我们将提供免费取件服务。",
-  "ai.exchangeNoOrders": "暂无订单记录，无法申请换货。请先导入 Demo 数据或提供订单号。",
-  "ai.exchangeOrderListPrompt": "请选择需要换货的订单（仅已签收的订单支持换货申请）：\n\n{lines}\n\n请回复订单号即可。",
-  "ai.exchangeDuplicate": "订单 {orderId} 已有换货申请记录，无需重复申请。\n\n订单详情：\n{content}",
-  "ai.exchangeIneligible": "订单 {orderId} 当前状态为「{statusLabel}」，仅已签收的商品支持换货。\n\n订单详情：\n{content}",
-  "ai.exchangeIneligibleShort": "订单 {orderId} 当前状态为「{statusLabel}」，仅已签收的商品支持换货。",
-  "ai.exchangeSubmittedNoItems": "换货申请已提交！\n\n- 订单：{orderId}\n- 处理周期：收到旧件后 3 个工作日寄出新件\n\n请将商品保持全新状态并附带完整包装寄回。",
-  "ai.exchangeSubmitted": "换货申请已提交！\n\n- 订单：{orderId}\n- 商品：{items}\n- 处理周期：收到旧件后 3 个工作日寄出新件\n\n请将商品保持全新状态并附带完整包装寄回。",
-  "ai.orderNotFoundShort": "未找到订单 {orderId}，请核实订单号。",
-
-  // Suggestion buttons (post-action follow-ups)
-  "sug.refund": "我要退款",
-  "sug.exchange": "我要换货",
-  "sug.refundActionTpl": "我要退 {orderId} 的款",
-  "sug.exchangeActionTpl": "我要换 {orderId} 的货",
-  "sug.delivery": "预计什么时候到？",
-  "sug.deliveryActionTpl": "{orderId} 预计什么时候到？",
-  "sug.eta": "什么时候发货？",
-  "sug.etaActionTpl": "{orderId} 什么时候发货？",
-  "sug.cancel": "我想取消订单",
-  "sug.cancelActionTpl": "我想取消订单 {orderId}",
-  "sug.status": "最新进度怎么样？",
-  "sug.statusActionTpl": "{orderId} 最新进度怎么样？",
-  "sug.lookupOther": "查询其他订单",
-  "sug.faqGeneral": "售后政策咨询",
-  "sug.refundApply": "我要申请退款",
-  "sug.timelineRefund": "退款多久到账？",
-  "sug.address": "寄回地址是哪里？",
-  "sug.timelineExchange": "换货需要多久？",
-  "sug.lookupMyOrders": "查询我的订单",
-
-  // SSE: seed-demo
-  "seed.start": "开始导入 {docs} 篇文档 + {orders} 个订单...",
-  "seed.indexing": "[{i}/{n}] 正在生成索引: {title}",
-  "seed.importingOrder": "[{i}/{n}] 导入订单: {orderId}",
-  "seed.failure": "导入失败，共 {failed} 条数据写入出错，请检查存储配置。",
-  "seed.successOnly": "导入完成！成功 {imported} 条",
-  "seed.successWithFailures": "导入完成！成功 {imported} 条，失败 {failed} 条",
-
-  // SSE: upload
-  "upload.parsing": "正在解析文档: {filename}",
-  "upload.parseDone": "解析完成，提取 {chars} 字符",
-  "upload.summarizing": "正在生成摘要和关键词...",
-  "upload.saving": "正在保存文档...",
-  "upload.noText": "无法从文档中提取有效文本内容。",
-  "upload.failure": "上传失败: {error}",
-};
+// ─── Translation table (English only) ───
 
 const EN: Record<string, string> = {
   // Status labels
@@ -192,11 +107,11 @@ const EN: Record<string, string> = {
   "upload.failure": "Upload failed: {error}",
 };
 
-const TABLES: Record<Locale, Record<string, string>> = { zh: ZH, en: EN };
+const TABLES: Record<string, Record<string, string>> = { en: EN };
 
 /** Translate `key` to target locale, with optional `{name}` template params. */
 export function t(locale: Locale, key: string, params?: Record<string, string | number>): string {
-  let str = TABLES[locale]?.[key] ?? TABLES.zh[key] ?? key;
+  let str = TABLES[locale]?.[key] ?? TABLES.en[key] ?? key;
   if (params) {
     for (const [k, v] of Object.entries(params)) {
       str = str.split(`{${k}}`).join(String(v));

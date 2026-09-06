@@ -8,10 +8,11 @@
  * - action: "edit" + docId + category + content + title → update content, regenerate summary
  * - action: "list_orders" → list all seeded orders
  *
- * 注意：本端点放在 agents/ 下（而非 cloud-functions/），原因是它需要直接访问
- * context.store.langgraphStore 做底层 KV 读写。Cloud-function runtime 在
- * `createCloudFunctionAgentStore` 里显式剥离了 langgraphStore / langgraphCheckpointer
- * 适配器，只保留通用消息 API；agent 端点拿到的 context.store 才是完整 AgentMemory。
+ * Note: this endpoint lives under agents/ (not cloud-functions/) because it needs
+ * direct access to context.store.langgraphStore for low-level KV reads/writes.
+ * The cloud-function runtime strips the langgraphStore/langgraphCheckpointer
+ * adapters in `createCloudFunctionAgentStore` and keeps only the generic message
+ * API; agent endpoints receive the full AgentMemory in context.store instead.
  */
 import { HumanMessage, SystemMessage } from "@langchain/core/messages";
 import { createModel } from "../_shared";
@@ -28,7 +29,7 @@ const VALID_CATEGORIES: DocCategory[] = ["faq", "policy", "product", "order_doc"
 // Order ID pattern (e.g. ORD-20250520-001) — same as backend nodes.ts
 const ORDER_FILENAME_RE = /^ORD-\d{8}-\d{3,}/i;
 
-/** Parse structured fields from a free-text order_doc body. Bilingual keywords. */
+/** Parse structured fields from a free-text order_doc body (English keywords). */
 function parseOrderDocFields(content: string): {
   totalAmount?: number;
   carrier?: string;
@@ -38,30 +39,30 @@ function parseOrderDocFields(content: string): {
 } {
   const result: any = {};
 
-  // 金额：¥1299  / Amount: ¥1299
-  const amountMatch = content.match(/(?:金额|Amount|Total)[：:]\s*¥?\s*(\d+(?:\.\d+)?)/i);
+  // Amount: 1299
+  const amountMatch = content.match(/(?:Amount|Total)[：:]\s*¥?\s*(\d+(?:\.\d+)?)/i);
   if (amountMatch) result.totalAmount = parseFloat(amountMatch[1]);
 
-  // 快递：顺丰速运 SF1234567890  / Shipping: SF Express SF1234567890
-  const expressMatch = content.match(/(?:快递|Shipping|Carrier)[：:]\s*(\S+?)\s+([A-Za-z0-9-]+)/i);
+  // Shipping: SF Express SF1234567890
+  const expressMatch = content.match(/(?:Shipping|Carrier)[：:]\s*(\S+?)\s+([A-Za-z0-9-]+)/i);
   if (expressMatch) {
     result.carrier = expressMatch[1];
     result.trackingNumber = expressMatch[2];
   } else {
-    const carrierOnly = content.match(/(?:快递|Shipping|Carrier)[：:]\s*(\S+)/i);
+    const carrierOnly = content.match(/(?:Shipping|Carrier)[：:]\s*(\S+)/i);
     if (carrierOnly) result.carrier = carrierOnly[1];
   }
 
-  // 商品：xxx  / Product: xxx
-  const productMatch = content.match(/(?:商品|Product|Item)[：:]\s*([^\n]+)/i);
+  // Product: xxx
+  const productMatch = content.match(/(?:Product|Item)[：:]\s*([^\n]+)/i);
   if (productMatch) result.itemNames = productMatch[1].trim();
 
   const lower = content.toLowerCase();
-  if (content.includes("换货申请") || lower.includes("exchange request") || lower.includes("exchange_requested")) result.status = "exchange_requested";
-  else if (content.includes("退款申请") || content.includes("退款中") || lower.includes("refund request") || lower.includes("refund_requested")) result.status = "refund_requested";
-  else if (content.includes("已签收") || content.includes("已收货") || content.includes("签收") || lower.includes("delivered")) result.status = "delivered";
-  else if (content.includes("运输中") || content.includes("已发货") || content.includes("在途") || lower.includes("shipped") || lower.includes("in transit")) result.status = "shipped";
-  else if (content.includes("待发货") || content.includes("未发货") || lower.includes("pending")) result.status = "pending";
+  if (lower.includes("exchange request") || lower.includes("exchange_requested")) result.status = "exchange_requested";
+  else if (lower.includes("refund request") || lower.includes("refund_requested")) result.status = "refund_requested";
+  else if (lower.includes("delivered")) result.status = "delivered";
+  else if (lower.includes("shipped") || lower.includes("in transit")) result.status = "shipped";
+  else if (lower.includes("pending")) result.status = "pending";
 
   return result;
 }
@@ -86,15 +87,15 @@ async function regenerateSummary(
   const truncated = content.length > 8000 ? content.slice(0, 8000) + "\n...[truncated]" : content;
 
   const response = await model.invoke([
-    new SystemMessage(`你是一个文档摘要助手。给定一个文档，生成：
-1. 简明摘要（200字以内），概述核心内容和用途。
-2. 5-10个关键词，涵盖文档的主要主题。
+    new SystemMessage(`You are a document summarizer. Given a document, generate:
+1. A concise summary (within 200 words) describing the core content and purpose.
+2. 5-10 keywords covering the main topics.
 
-文档分类：${category}
+Document category: ${category}
 
-输出严格 JSON 格式（不含其他文本）：
-{"summary": "...", "keywords": ["关键词1", "关键词2", ...]}`),
-    new HumanMessage(`文件名: ${filename}\n\n文档内容:\n${truncated}`),
+Output STRICT JSON only (no other text):
+{"summary": "...", "keywords": ["k1", "k2", ...]}`),
+    new HumanMessage(`Filename: ${filename}\n\nContent:\n${truncated}`),
   ]);
 
   const text = typeof response.content === "string" ? response.content : "";
