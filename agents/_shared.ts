@@ -18,7 +18,7 @@ export function getPrimaryConfig(env: AgentEnv): ModelConfig {
   return {
     apiKey: env.AI_GATEWAY_API_KEY!,
     baseURL: env.AI_GATEWAY_BASE_URL!,
-    model: env.AI_GATEWAY_MODEL || env.AI_MODEL || "deepseek/deepseek-chat",
+    model: env.AI_GATEWAY_MODEL || env.AI_MODEL || "inclusionai/ling-3.0-flash-sante:free",
   };
 }
 
@@ -31,7 +31,7 @@ export function getBackupConfig(env: AgentEnv): ModelConfig | null {
   const apiKey = env.AI_GATEWAY_BACKUP_API_KEY;
   const baseURL = env.AI_GATEWAY_BACKUP_BASE_URL;
   if (!apiKey || !baseURL) return null;
-  return { apiKey, baseURL, model: env.AI_GATEWAY_BACKUP_MODEL || "deepseek/deepseek-chat" };
+  return { apiKey, baseURL, model: env.AI_GATEWAY_BACKUP_MODEL || "liquid/lfm-2.5-2.6b:free" };
 }
 
 // Cache models by credential fingerprint (baseURL::apiKey::model). No module-level

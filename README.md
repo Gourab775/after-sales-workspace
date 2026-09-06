@@ -91,7 +91,7 @@ Open http://localhost:3000 for the workspace UI.
 |----------|----------|-------------|
 | `SERVICE_API_KEY` | Yes | AI provider API key (OpenAI-compatible; OpenRouter by default). |
 | `SERVICE_BASE_URL` | Yes | Gateway base URL, e.g. `https://openrouter.ai/api/v1`. |
-| `SERVICE_MODEL` | No | Model identifier. Defaults to `deepseek/deepseek-chat`. |
+| `SERVICE_MODEL` | No | Model identifier. Defaults to `inclusionai/ling-3.0-flash-sante:free`. |
 | `DATABASE_URL` | Yes | Neon Postgres pooled connection string (database `after_sales`). Tables are created automatically on first request. |
 
 > Alias: `SERVICE_*` is the canonical naming in this workspace. `SERVICE_API_KEY`, `SERVICE_BASE_URL`, and `SERVICE_MODEL` are aliases for `AI_GATEWAY_API_KEY`, `AI_GATEWAY_BASE_URL`, and `AI_GATEWAY_MODEL` for backward compatibility. Either naming works; prefer `SERVICE_*` for new deployments.
