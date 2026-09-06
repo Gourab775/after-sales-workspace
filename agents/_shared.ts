@@ -59,6 +59,9 @@ function buildModel(cfg: ModelConfig): ChatOpenAI {
       defaultHeaders,
     },
     timeout: 300_000,
+    // Fail fast on rate limits so the backup provider (or a clean error to
+    // the user) kicks in quickly instead of retrying for ~90s.
+    maxRetries: 2,
   });
   _modelCache.set(cacheKey, cached);
   return cached;
