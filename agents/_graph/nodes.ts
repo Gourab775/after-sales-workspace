@@ -168,7 +168,7 @@ If the user mentions both an order ID and a return, prefer refund/exchange.`),
 // ─── FAQ Search (Knowledge Base) ───
 
 export async function faqSearch(state: AfterSalesStateType, env: AgentEnv, context: any, runtime?: StreamRuntime) {
-  const locale = "en" as Locale;
+  const locale = (state.locale || "en");
   const summaries = await getAllSummaries(context.store);
   logger.log(`Knowledge base has ${summaries.length} documents`);
 
@@ -235,7 +235,7 @@ Requirements:
 - For procedures, give clear steps
 - If the user needs further help, ask them to share their order ID
 - Mention the document category your information comes from
-- The user may write in Hinglish (Hindi-English mix). Understand it fully, but ALWAYS respond in English.
+- The user may write in English, Hindi, or Hinglish. The language directive below tells you which language and tone to reply in.
 
 Knowledge-base documents:
 ${contextText}${languageDirective(locale)}`),
@@ -254,7 +254,7 @@ ${contextText}${languageDirective(locale)}`),
 // ─── Lookup Order ───
 
 export async function lookupOrder(state: AfterSalesStateType, context: any) {
-  const locale = "en" as Locale;
+  const locale = (state.locale || "en");
   const sep = ", ";
   const orderId = state.orderId;
 
@@ -329,7 +329,7 @@ export async function lookupOrder(state: AfterSalesStateType, context: any) {
 // ─── Request Refund ───
 
 export async function requestRefund(state: AfterSalesStateType, context: any) {
-  const locale = "en" as Locale;
+  const locale = (state.locale || "en");
   const sep = ", ";
   const ineligibleNote = (label: string) => ` *(${label}, not eligible for refund)*`;
 
@@ -475,7 +475,7 @@ export async function requestRefund(state: AfterSalesStateType, context: any) {
 // ─── Request Exchange ───
 
 export async function requestExchange(state: AfterSalesStateType, context: any) {
-  const locale = "en" as Locale;
+  const locale = (state.locale || "en");
   const sep = ", ";
   const ineligibleNote = (label: string) => ` *(${label}, not eligible for exchange)*`;
 
@@ -607,7 +607,7 @@ export async function requestExchange(state: AfterSalesStateType, context: any) 
 // ─── General Chat ───
 
 export async function generalChat(state: AfterSalesStateType, env: AgentEnv, runtime?: StreamRuntime) {
-  const locale = "en" as Locale;
+  const locale = (state.locale || "en");
   const answer = await streamAnswer(env, [
     new SystemMessage(`You are a friendly after-sales support assistant. You can help users:
 - Look up order status (needs an order ID)
@@ -615,7 +615,7 @@ export async function generalChat(state: AfterSalesStateType, env: AgentEnv, run
 - Request an exchange
 - Answer after-sales policy questions
 
-If the user's question is vague, guide them to share more details. Keep it concise and friendly. The user may write in Hinglish (Hindi-English mix) — understand it fully, but ALWAYS respond in English.${languageDirective(locale)}`),
+If the user's question is vague, guide them to share more details. Keep it concise and friendly. The user may write in English, Hindi, or Hinglish — the language directive below tells you which language and tone to reply in.${languageDirective(locale)}`),
     new HumanMessage(state.userInput),
   ], runtime, "general_chat");
   return {

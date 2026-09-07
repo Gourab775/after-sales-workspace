@@ -8,6 +8,7 @@
  * — they belong in "policy" or "faq" so they are never surfaced as orders.
  */
 import type { Order } from "../_shared";
+import type { Locale } from "../_i18n";
 
 export interface DemoDoc {
   title: string;
@@ -293,7 +294,7 @@ export const DEMO_ORDERS_EN: Order[] = [
 
 // ─── Helpers (English-only; locale param kept for backward compatibility) ───
 
-export type DemoLocale = "en";
+export type DemoLocale = Locale;
 
 export function getDemoDocs(_locale?: DemoLocale): DemoDoc[] {
   return DEMO_DOCS_EN;

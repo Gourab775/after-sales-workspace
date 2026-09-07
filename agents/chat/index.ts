@@ -7,7 +7,7 @@
  */
 import { createLogger, createSSEResponse, sseEvent, saveOrder, getOrder } from "../_shared";
 import { buildAfterSalesGraph } from "../_graph/builder";
-import { t, getLocale, type Locale } from "../_i18n";
+import { t, detectLanguage, type Locale } from "../_i18n";
 import type { AfterSalesStateType } from "../_graph/state";
 
 const logger = createLogger("chat");
@@ -194,7 +194,9 @@ export async function onRequest(context: any) {
   const { request } = context;
   const body = request?.body ?? {};
   const { message, pendingAction } = body;
-  const locale = getLocale(body);
+  // Detect the user's language per message so replies (and tone) match how
+  // they speak: English, Hindi, or Hinglish.
+  const locale: Locale = detectLanguage(typeof message === "string" ? message : "");
   if (!message) {
     return new Response(JSON.stringify({ error: "Missing message" }), {
       status: 400,
