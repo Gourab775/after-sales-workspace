@@ -2,7 +2,7 @@
 
 Professional after-sales customer service workspace with automated intent routing, order operations, and knowledge management.
 
-**Live Demo:** https://after-sales-workspace.vercel.app
+**Live Demo:** https://after-sales-assistant.vercel.app
 
 **Category:** Customer Service / Support Operations
 **Stack:** Next.js 16 · React 19 · TypeScript · Tailwind CSS · State Workflow Engine

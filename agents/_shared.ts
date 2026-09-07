@@ -47,7 +47,7 @@ function buildModel(cfg: ModelConfig): ChatOpenAI {
 
   const defaultHeaders: Record<string, string> = {};
   if (cfg.baseURL.includes("openrouter.ai")) {
-    defaultHeaders["HTTP-Referer"] = "https://after-sales-workspace.vercel.app";
+    defaultHeaders["HTTP-Referer"] = "https://after-sales-assistant.vercel.app";
     defaultHeaders["X-Title"] = "After-Sales Assistant";
   }
 
